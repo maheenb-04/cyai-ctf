@@ -2,12 +2,14 @@
 
 CYAI's fall Capture The Flag at York College.
 
-Play here: https://maheenb-04.github.io/cyai-ctf/
+Play here: https://cyaictf.netlify.app/
+
+Backup link (same site, same accounts and scores): https://maheenb-04.github.io/cyai-ctf/
 
 Thursday, October 29, 2026, 12:00 to 2:00 PM Eastern, AC-3E07 (UCRC Computer Lab)
 
-<a href="https://maheenb-04.github.io/cyai-ctf/"><img src=".github/preview-desktop.png" alt="Homepage on a laptop" width="74%"></a>
-<a href="https://maheenb-04.github.io/cyai-ctf/"><img src=".github/preview-phone.png" alt="Homepage on a phone" width="22%"></a>
+<a href="https://cyaictf.netlify.app/"><img src=".github/preview-desktop.png" alt="Homepage on a laptop" width="74%"></a>
+<a href="https://cyaictf.netlify.app/"><img src=".github/preview-phone.png" alt="Homepage on a phone" width="22%"></a>
 
 The Rogue AI Recovery is a two-hour, beginner-friendly CTF run by the York College Cybersecurity & AI
 Club. Teams of up to four work through web, OSINT and prompt injection challenges and submit flags
