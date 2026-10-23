@@ -961,6 +961,22 @@
         'work backwards from there one step at a time, writing down what each step does. Strange variable names are just names: ' +
         'rename them in your notes to whatever makes sense to you.',
     },
+    {
+      id: 'aviation', title: 'Aviation', match: /aviat|flight|airport/i,
+      what: 'Air traffic control keeps track of every aircraft using a few simple codes. A callsign names the flight (like ' +
+        'UAL237). A transponder in the plane broadcasts a 4-digit number called a squawk code, which controllers assign, and a ' +
+        'handful of codes are reserved so pilots can report an emergency silently. Airports have two codes: a 3-letter IATA code ' +
+        'you see on luggage tags and a 4-letter ICAO code that pilots and controllers use. In this CTF, YorkGPT took over a ' +
+        '(fictional) York training flight.',
+      tools: [
+        ['FAA and SKYbrary', 'faa.gov and skybrary.aero explain aviation terms in plain English. Search them for any code or word you don’t recognize.'],
+        ['Airport code lookup', 'Search an airport’s name or code online: its Wikipedia page lists both its IATA and ICAO codes near the top.'],
+        ['Flightradar24', 'flightradar24.com shows real flights live, with their callsigns, routes and altitudes, so you can see what this data looks like.'],
+      ],
+      tip: 'Before you start, write down what each column in the data means. Once you know what the codes stand for, the one that ' +
+        'doesn’t belong stands out. Never guess an aviation code: look it up in an official source, because similar-looking ' +
+        'codes can mean completely different things.',
+    },
   ];
   function guideFor(category) {
     return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
