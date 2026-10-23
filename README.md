@@ -31,5 +31,3 @@ finance and aviation, and submit flags in the format `CYAI{...}`. Everything run
 ## Contact
 
 cyai.club@gmail.com, or [@cyaiyork](https://www.instagram.com/cyaiyork/) on Instagram.
-
-The storyline is fictional. York's real IT systems are not part of the challenges.
