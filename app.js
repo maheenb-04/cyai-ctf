@@ -946,6 +946,21 @@
         'Whatever is left over is what you’re looking for. Look closely at names and numbers that are almost right: a vendor ' +
         'you’ve never heard of, or an amount that’s close to what was approved but not equal to it.',
     },
+    {
+      id: 'reverse', title: 'Reverse Engineering', match: /revers/i,
+      what: 'Reverse engineering means taking a finished program and working out how it works without the original plans. ' +
+        'Beginner challenges usually give you a small program that checks whether a password or code is right, and you read its ' +
+        'logic to figure out what it accepts. In this CTF, YorkGPT wrote its own code checker and is sure nobody can understand it.',
+      tools: [
+        ['View Page Source', 'Ctrl+U on Windows, Cmd+Option+U on a Mac. Code that runs in your browser is sent to your browser, so you can read it.'],
+        ['Browser console', 'F12, then the Console tab. Type JavaScript and press Enter to run it, which is a great way to test what one line of code does.'],
+        ['CyberChef', 'gchq.github.io/CyberChef: converts between numbers, text, hex and other formats without writing any code.'],
+        ['A laptop', 'Phones can’t open the developer tools. If you only have a phone, team up with someone who has a laptop for this category.'],
+      ],
+      tip: 'Don’t try to understand everything at once. Find the one place where the program decides “right” or “wrong”, then ' +
+        'work backwards from there one step at a time, writing down what each step does. Strange variable names are just names: ' +
+        'rename them in your notes to whatever makes sense to you.',
+    },
   ];
   function guideFor(category) {
     return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
