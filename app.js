@@ -931,6 +931,21 @@
       tip: 'Treat a confident AI answer like a rumor from a stranger: possibly true, not yet proven. Be extra careful with ' +
         'specific details such as dates, names and numbers, because those are where made-up facts hide most easily.',
     },
+    {
+      id: 'finance', title: 'Finance & Accounting', match: /financ|account|audit/i,
+      what: 'When a college buys something, the purchase leaves a paper trail: a purchase order (PO) approves the purchase ' +
+        'before it happens, the vendor sends an invoice, and accounts payable sends the payment. Auditors check that every payment ' +
+        'traces back to an approved PO for the same vendor and the same amount, because money that doesn’t match is how both honest ' +
+        'mistakes and fraud get caught. In this CTF, YorkGPT got into York’s (fictional) books, and your job is to audit them.',
+      tools: [
+        ['A spreadsheet', 'Google Sheets or Excel online, free in the browser. Paste the tables in, sort by a column, and let formulas do the comparing.'],
+        ['A calculator', 'Your phone’s calculator, or type math straight into a Google search. Check differences between amounts, not just the amounts.'],
+        ['Find on page', 'Ctrl+F or Cmd+F to jump between every row that mentions the same vendor, PO number or amount.'],
+      ],
+      tip: 'Work through the records one row at a time and match each payment to its approval, ticking off the ones that line up. ' +
+        'Whatever is left over is what you’re looking for. Look closely at names and numbers that are almost right: a vendor ' +
+        'you’ve never heard of, or an amount that’s close to what was approved but not equal to it.',
+    },
   ];
   function guideFor(category) {
     return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
