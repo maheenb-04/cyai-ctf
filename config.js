@@ -20,4 +20,7 @@ window.CTF_CONFIG = {
   // so these only matter for demo mode and the first split second of page load.
   EVENT_START: '2026-10-29T12:00:00-04:00',
   EVENT_END:   '2026-10-30T12:00:00-04:00',  // flags accepted for 24 hours
+  // Public scoreboard ignores solves after this; standings at this moment decide prizes.
+  // (freeze_at in event_settings wins once migration 002 is run.)
+  SCOREBOARD_FREEZE: '2026-10-29T14:00:00-04:00',
 };

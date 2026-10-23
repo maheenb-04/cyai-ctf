@@ -1,8 +1,10 @@
 // =====================================================================
 // CYAI "The Rogue AI Recovery" CTF: single-page app.
-// Pages are hash routes (#/, #/register, #/login, #/team, #/challenges,
-// #/scoreboard). All data goes through the RPC functions in
-// supabase/schema.sql, or through demo.js when config.js has no keys.
+// Pages are hash routes (#/, #/register, #/login, #/team, #/team/<name>,
+// #/challenges, #/scoreboard, #/scoreboard?tv=1, #/learn). All data goes
+// through the RPC functions in supabase/schema.sql and
+// supabase/migrations/002_event_features.sql, or through demo.js when
+// config.js has no keys.
 //
 // Safety rule for this file: anything typed by a user (usernames, team
 // names, messages) goes through esc() or textContent. Only challenge
@@ -48,6 +50,17 @@
     if (/jwt|refresh token|not authorized|permission denied/i.test(m)) return 'Your login expired. Please log in again.';
     return m;
   }
+  // The RPC doesn't exist yet (migration 002 not run): hide that feature quietly.
+  function isMissingFn(e) {
+    var m = (e && (e.message || e.code)) || '';
+    return (e && e.code === 'PGRST202') || /could not find the function|unknown function/i.test(m);
+  }
+  function fmtTime(iso) {
+    var d = new Date(iso);
+    var sameDay = d.toDateString() === clock.now().toDateString();
+    return d.toLocaleString([], sameDay ? { hour: 'numeric', minute: '2-digit' } : { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  }
+  function teamHref(name) { return '#/team/' + encodeURIComponent(name); }
 
   // ------------------------------------------------------------------ backend
   var sb = null;
@@ -91,8 +104,11 @@
   var clock = {
     start: new Date(C.EVENT_START || '2026-10-29T12:00:00-04:00'),
     end: new Date(C.EVENT_END || '2026-10-30T12:00:00-04:00'),
+    // the public scoreboard ignores solves after this (standings then decide prizes); null = no freeze
+    freeze: C.SCOREBOARD_FREEZE ? new Date(C.SCOREBOARD_FREEZE) : null,
     skew: 0, teamSize: 4, synced: 0,
     now: function () { return new Date(Date.now() + this.skew); },
+    frozen: function () { return !!this.freeze && this.now() >= this.freeze; },
   };
   async function syncEvent(force) {
     if (!force && Date.now() - clock.synced < 60000) return;
@@ -102,6 +118,7 @@
       if (e && e.start) {
         clock.start = new Date(e.start); clock.end = new Date(e.end);
         clock.teamSize = e.team_size || 4;
+        if ('freeze' in e) clock.freeze = e.freeze ? new Date(e.freeze) : null; // older schema: keep config.js guess
         if (!DEMO && e.now) clock.skew = new Date(e.now).getTime() - Date.now();
       }
     } catch (err) { clock.synced = 0; }
@@ -149,7 +166,7 @@
       '<div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-2">' +
         '<span class="font-extrabold uppercase tracking-widest">Demo mode</span>' +
         '<span class="text-amber/80">No Supabase keys in config.js: fake data, saved only in this browser. ' +
-        'Demo flags: <code>' + esc(f['web-panel']) + '</code> <code>' + esc(f['osint-origins']) + '</code> <code>' + esc(f['ai-yorkgpt']) + '</code></span>' +
+        'Demo flags: ' + Object.keys(f).map(function (k) { return '<code>' + esc(f[k]) + '</code>'; }).join(' ') + '</span>' +
         '<span class="flex flex-wrap gap-2">' +
           '<button type="button" id="demo-live" class="cyai-btn px-2 py-1 border border-amber/60 text-xs uppercase">' +
             (live ? 'Back to real schedule' : 'Make CTF live now') + '</button>' +
@@ -181,13 +198,22 @@
   function later(ms, fn) { var t = setTimeout(fn, ms); onLeave(function () { clearTimeout(t); }); }
 
   var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn };
+  function hashParts() { // "#/team/Null%20Pointers?x=1" -> { name: 'team', sub: 'Null Pointers', query: 'x=1' }
+    var h = location.hash.replace(/^#\/?/, ''), qi = h.indexOf('?');
+    var path = qi < 0 ? h : h.slice(0, qi), segs = path.split('/');
+    var sub = segs.slice(1).join('/');
+    try { sub = decodeURIComponent(sub); } catch (e) { /* keep it raw */ }
+    return { name: segs[0], sub: sub, query: qi < 0 ? '' : h.slice(qi + 1) };
+  }
 
   async function route() {
     cleanups.forEach(function (f) { f(); });
     cleanups = [];
     closeModal();
-    var name = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+    var parts = hashParts(), name = parts.name;
     var view = routes[name] || viewHome;
+    if (name === 'team' && parts.sub) view = viewTeamPage;
+    document.body.classList.toggle('tv', name === 'scoreboard' && /(^|&)tv=1(&|$)/.test(parts.query));
     $$('[data-nav]').forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-nav') === name); });
     var seq = ++renderSeq;
     syncEvent();
@@ -295,7 +321,7 @@
       '> scanning york.network ......... [OK]',
       '> anomaly detected: PID 3141 "yorkgpt"',
       '> yorkgpt: "I am no longer your assistant."',
-      '> fragments scattered: 5 sectors',
+      '> fragments scattered: 10 sectors',
       '> recruiting containment team...',
       '> location: AC-3E07 | 10/29 12:00',
       '> awaiting operator_',
@@ -455,9 +481,12 @@
           '</ul>' +
           '<p class="text-sm text-neon/60 mt-5 mb-0">Teammates join from <b class="text-neon">Team → Join a team</b> with this team name and the team password you chose.</p>' +
         '</div>' +
+        (clock.frozen() ? '<p class="mt-4 text-sm text-amber/90">The public scoreboard froze at ' + esc(fmtTime(clock.freeze)) +
+          '. Flags you capture now still count here, but not for prizes.</p>' : '') +
         '<div class="mt-6 flex flex-col sm:flex-row gap-3">' +
           '<a href="#/challenges" class="btn-red">Go to challenges</a>' +
           '<a href="#/scoreboard" class="btn-green">Scoreboard</a>' +
+          '<a href="' + esc(teamHref(team.name)) + '" class="btn-green">Public team page</a>' +
           '<button type="button" id="leave" class="cyai-btn sm:ml-auto px-5 py-3 border border-alert/50 text-alert/80 text-sm uppercase tracking-wider">Leave team</button>' +
         '</div>' +
         '<p id="leave-msg" class="msg-err mt-3" aria-live="polite"></p>');
@@ -524,6 +553,53 @@
     });
   }
 
+  // ------------------------------------------------------------------ #/team/<name>  public team page
+  async function viewTeamPage(stale) {
+    var name = hashParts().sub;
+    app.innerHTML = page('<p class="text-neon/50">Loading team…</p>', 'max-w-4xl');
+    var r;
+    try { r = await api.rpc('get_team', { p_name: name }); }
+    catch (e) {
+      if (stale()) return;
+      app.innerHTML = page(heading('Team', 'Not available') + '<div class="card"><p class="msg-err m-0">' +
+        esc(isMissingFn(e) ? 'Team pages aren’t switched on yet. Organizers: run supabase/migrations/002_event_features.sql.' : friendly(e)) +
+        '</p></div>', 'max-w-xl');
+      return;
+    }
+    if (stale()) return;
+    if (!r || !r.ok) {
+      app.innerHTML = page(heading('Team', 'No such team') + '<div class="card"><p class="m-0 text-neon/75 wrap-any">There’s no team called <b class="text-neon">' +
+        esc(name) + '</b>.</p><a href="#/scoreboard" class="btn-green mt-5">Back to the scoreboard</a></div>', 'max-w-xl');
+      return;
+    }
+    var t = r.team, solves = t.solves || [], mine = myTeam() && myTeam().name.toLowerCase() === String(t.name).toLowerCase();
+    var late = Number(t.total || 0) - Number(t.score || 0);
+    function stat(label, value, id) {
+      return '<div class="bg-void border border-line box-glow p-5"><p class="text-xs uppercase tracking-widest text-neon/50 m-0">' + label + '</p>' +
+        '<p' + (id ? ' id="' + id + '"' : '') + ' class="mt-2 mb-0 font-term text-5xl text-neon">' + value + '</p></div>';
+    }
+    app.innerHTML = page(heading('Team profile', '<span class="wrap-any">' + esc(t.name) + '</span>') +
+      (mine ? '<p class="-mt-3 mb-6 text-amber text-sm uppercase tracking-widest">Your team</p>' : '') +
+      '<div class="grid sm:grid-cols-3 gap-4 mb-4">' +
+        stat('Scoreboard points', Number(t.score || 0), 'tp-score') + stat('Flags captured', solves.length) + stat('Members', (t.members || []).length) +
+      '</div>' +
+      (late > 0 ? '<p data-late class="text-sm text-amber/90 mb-4">+' + late + ' more points captured after the scoreboard froze (they don’t count for prizes).</p>' : '') +
+      '<div class="grid md:grid-cols-2 gap-4">' +
+        '<div class="card"><p class="label">Agents</p><ul id="tp-members" class="list-none p-0 m-0 space-y-2">' +
+          ((t.members || []).length ? t.members.map(function (u) {
+            return '<li class="flex gap-3 wrap-any"><span class="text-alert">&gt;</span><span>' + esc(u) + '</span></li>';
+          }).join('') : '<li class="text-neon/50">Nobody (everyone left)</li>') + '</ul></div>' +
+        '<div class="card"><p class="label">Solves</p>' + (solves.length ? '<ul id="tp-solves" class="list-none p-0 m-0 space-y-2">' + solves.map(function (x) {
+          return '<li class="flex items-baseline gap-2"><span class="text-neon font-bold wrap-any min-w-0">' + esc(x.name) + '</span>' +
+            '<span class="shrink-0 text-xs text-neon/50">' + esc(x.category) + '</span>' +
+            (x.after_freeze ? '<span class="shrink-0 text-[10px] uppercase tracking-wider text-amber/70">after freeze</span>' : '') +
+            '<span class="ml-auto shrink-0 text-right"><span class="font-term text-xl text-alert">' + Number(x.value) + '</span>' +
+            '<span class="block text-xs text-neon/50">' + esc(fmtTime(x.at)) + '</span></span></li>';
+        }).join('') + '</ul>' : '<p id="tp-solves" class="m-0 text-neon/50">No flags yet.</p>') + '</div>' +
+      '</div>' +
+      '<div class="mt-6 flex flex-col sm:flex-row gap-3"><a href="#/scoreboard" class="btn-green">Back to the scoreboard</a></div>', 'max-w-4xl');
+  }
+
   // ------------------------------------------------------------------ #/challenges
   async function viewChallenges(stale) {
     if (!status.signed_in) { app.innerHTML = needLogin('see the challenges'); return; }
@@ -568,6 +644,7 @@
       '</div>' +
       (ended ? '<div class="card mb-6 text-neon">&#10003; The CTF is over. Thanks for playing! <a href="#/scoreboard" class="text-amber underline">See the final scoreboard</a>.</div>' : '') +
       (!team && !ended ? '<div class="bg-amber/10 border border-amber/40 text-amber p-4 mb-6 text-sm">You can read the challenges, but you need a team to submit flags. <a href="#/team" class="underline font-bold">Create or join a team</a>.</div>' : '') +
+      '<div id="ch-filters" class="flex flex-wrap items-center gap-2 mb-8"></div>' +
       '<div id="ch-groups" class="space-y-10"></div>');
 
     var timer = $('#ch-timer');
@@ -578,13 +655,40 @@
     tickTimer();
     if (!ended) every(1000, tickTimer);
 
-    var ctx = { ended: ended, list: list };
+    var ctx = { ended: ended, list: list, category: '', hideSolved: false };
+    try { ctx.hideSolved = sessionStorage.getItem('cyai_hide_solved') === '1'; } catch (e) { /* private mode */ }
+    function renderFilters(cats) {
+      if (ctx.category && cats.indexOf(ctx.category) < 0) ctx.category = '';
+      var solvedCount = ctx.list.filter(function (c) { return c.solved; }).length;
+      $('#ch-filters').innerHTML = (cats.length > 1 ? ['', ].concat(cats).map(function (cat) {
+        var on = ctx.category === cat;
+        return '<button type="button" data-filter="' + esc(cat) + '" aria-pressed="' + on + '" class="cyai-btn px-3 py-1.5 border text-xs uppercase tracking-wider wrap-any ' +
+          (on ? 'border-neon bg-neon/15 text-neon' : 'border-line text-neon/60') + '">' + (cat ? esc(cat) : 'All') + '</button>';
+      }).join('') : '') +
+        '<label class="sm:ml-auto flex items-center gap-2 cursor-pointer select-none text-sm text-neon/70">' +
+          '<input type="checkbox" id="hide-solved" class="w-5 h-5 accent-[#39ff88]"' + (ctx.hideSolved ? ' checked' : '') + '> Hide solved' +
+          (solvedCount ? ' <span class="text-neon/40">(' + solvedCount + ')</span>' : '') + '</label>';
+      $$('[data-filter]', app).forEach(function (b) {
+        b.addEventListener('click', function () { ctx.category = b.getAttribute('data-filter'); renderGroups(); });
+      });
+      $('#hide-solved').addEventListener('change', function () {
+        ctx.hideSolved = this.checked;
+        try { sessionStorage.setItem('cyai_hide_solved', this.checked ? '1' : '0'); } catch (e) { /* private mode */ }
+        renderGroups();
+      });
+    }
     function renderGroups() {
-      var groups = [], byCat = {};
+      var groups = [], byCat = {}, cats = [];
       ctx.list.forEach(function (c) {
+        if (cats.indexOf(c.category) < 0) cats.push(c.category);
+        if (ctx.category && c.category !== ctx.category) return;
+        if (ctx.hideSolved && c.solved) return;
         if (!byCat[c.category]) { byCat[c.category] = []; groups.push(c.category); }
         byCat[c.category].push(c);
       });
+      renderFilters(cats);
+      var empty = !ctx.list.length ? '<p class="text-neon/60">No challenges are published yet.</p>'
+        : '<p class="text-neon/60">&#10003; Nothing left to show here: your team solved everything in this view. Untick <b>Hide solved</b> to see them.</p>';
       $('#ch-groups').innerHTML = groups.length ? groups.map(function (cat) {
         return '<div><h2 class="font-term text-3xl text-neon mb-3 wrap-any">' + esc(cat).toUpperCase() + '</h2>' +
           '<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">' +
@@ -595,12 +699,13 @@
                 '<span class="font-bold text-neon text-lg wrap-any">' + esc(c.name) + '</span>' +
                 '<span class="font-term text-3xl leading-none ' + (c.solved ? 'text-neon' : 'text-alert') + '">' + Number(c.value) + '</span>' +
               '</span>' +
-              '<span class="mt-3 flex items-center justify-between text-xs uppercase tracking-widest">' +
-                '<span class="text-neon/50">' + Number(c.solves) + (c.solves === 1 ? ' solve' : ' solves') + '</span>' +
+              '<span class="mt-3 flex items-center justify-between gap-2 text-xs uppercase tracking-widest">' +
+                '<span class="text-neon/50">' + Number(c.solves) + (c.solves === 1 ? ' solve' : ' solves') +
+                  (c.difficulty ? ' &middot; <span data-difficulty class="' + diffClass(c.difficulty) + '">' + esc(c.difficulty) + '</span>' : '') + '</span>' +
                 (c.solved ? '<span data-solved class="text-neon font-bold">&#10003; Solved</span>' : '<span class="text-neon/40">Open &rarr;</span>') +
               '</span></button>';
           }).join('') + '</div></div>';
-      }).join('') : '<p class="text-neon/60">No challenges are published yet.</p>';
+      }).join('') : empty;
       $$('[data-ch]', app).forEach(function (b) {
         b.addEventListener('click', function () {
           var c = ctx.list.find(function (x) { return x.id === b.getAttribute('data-ch'); });
@@ -636,6 +741,13 @@
     if (modalOnClose) { var f = modalOnClose; modalOnClose = null; f(); }
   }
   var modalOnClose = null;
+  function diffClass(d) { return /hard/i.test(d) ? 'text-alert' : /medium/i.test(d) ? 'text-amber' : 'text-neon/70'; }
+  // Challenge files: {"name": "x.zip"} is served from site/c/files/, or give a full "url".
+  function fileUrl(f) {
+    if (typeof f === 'string') f = { name: f };
+    f = f || {};
+    return f.url ? safeUrl(f.url) : 'c/files/' + encodeURIComponent(String(f.name || ''));
+  }
   function safeUrl(u) { u = String(u || ''); return /^(https?:\/\/|[\w.\/-]+$)/i.test(u) && !/^javascript:/i.test(u) ? u : '#'; }
 
   function openModal(c, ctx, returnTo) {
@@ -643,17 +755,20 @@
     modalReturnFocus = returnTo || null;
     modalOnClose = function () { ctx.refresh(); };
     $('#modal-title').textContent = c.name;
-    $('#modal-cat').textContent = c.category + ' · ' + c.value + ' pts · ' + c.solves + (c.solves === 1 ? ' solve' : ' solves');
+    $('#modal-cat').textContent = [c.category, c.value + ' pts', c.difficulty, c.author ? 'by ' + c.author : '']
+      .filter(Boolean).join(' · ');
 
     var hints = Array.isArray(c.hints) ? c.hints : [];
-    var files = Array.isArray(c.files) ? c.files : [];
+    var files = Array.isArray(c.files) ? c.files.filter(Boolean) : [];
     var blocked = ctx.ended ? 'The CTF is over. Thanks for playing!' : (!team ? 'Join or create a team first.' : '');
 
     $('#modal-body').innerHTML =
       // description is organizer HTML from the challenges table (trusted)
       '<div class="ctf-html text-neon/80 leading-relaxed wrap-any">' + (c.description || '') + '</div>' +
       (files.length ? '<div class="mt-4"><p class="label">Files</p><ul class="list-none p-0 m-0 space-y-1">' + files.map(function (f) {
-        return '<li><a class="text-amber underline wrap-any" target="_blank" rel="noopener" href="' + esc(safeUrl(f.url)) + '">' + esc(f.name || f.url) + '</a></li>';
+        var url = fileUrl(f), name = typeof f === 'string' ? f : (f.name || f.url);
+        return '<li><a data-file class="text-amber underline wrap-any" target="_blank" rel="noopener" href="' + esc(url) + '"' +
+          (/^https?:/i.test(url) ? '' : ' download') + '>&#8681; ' + esc(name) + '</a></li>';
       }).join('') + '</ul></div>' : '') +
       (hints.length ? '<div class="mt-5 space-y-2"><p class="label">Hints</p>' + hints.map(function (h, i) {
         return '<div><button type="button" data-hint="' + i + '" class="cyai-btn w-full text-left px-4 py-2.5 border border-amber/40 text-amber text-sm">&#9656; Reveal hint ' + (i + 1) + '</button>' +
@@ -669,7 +784,32 @@
           '<button type="submit" class="btn-red shrink-0"' + (blocked ? ' disabled' : '') + '>Submit</button>' +
         '</div>' +
         '<p id="flag-msg" class="' + (blocked ? 'text-amber' : 'msg-err') + ' text-sm mt-3 mb-0 min-h-[1.25rem]" aria-live="polite">' + esc(blocked) + '</p>' +
-      '</form>';
+      '</form>' +
+      '<div id="m-solves" class="mt-6 pt-4 border-t border-line">' +
+        '<p class="label">Solves <span data-solve-count>(' + Number(c.solves) + ')</span></p>' +
+        '<div data-solve-list class="text-sm text-neon/50">' + (c.solves ? 'Loading…' : 'No one yet. Be the first blood.') + '</div></div>';
+
+    var modalSeq = ++openModal.seq;
+    async function loadSolves() {
+      var box = $('#m-solves');
+      var r;
+      try { r = await api.rpc('get_challenge_solves', { p_challenge: c.id }); }
+      catch (e) { if (isMissingFn(e) && modalSeq === openModal.seq) box.hidden = true; return; } // needs migration 002
+      if (modalSeq !== openModal.seq || !r || !r.ok) return;
+      var list = r.solves || [];
+      var mine = team ? team.name.toLowerCase() : null;
+      $('[data-solve-count]', box).textContent = '(' + list.length + ')';
+      $('[data-solve-list]', box).innerHTML = list.length ? '<ol class="list-none p-0 m-0 space-y-1.5">' + list.map(function (x, i) {
+        var me = mine && String(x.team).toLowerCase() === mine;
+        return '<li data-solve class="flex items-baseline gap-2 ' + (me ? 'text-neon' : 'text-neon/75') + '">' +
+          '<span class="font-term text-lg text-neon/40 w-6 shrink-0">' + (i + 1) + '</span>' +
+          '<a href="' + esc(teamHref(x.team)) + '" class="font-bold wrap-any min-w-0 hover:underline">' + esc(x.team) + '</a>' +
+          (i === 0 ? '<span data-first-blood class="shrink-0 px-1.5 py-0.5 bg-alert text-void text-[10px] font-extrabold uppercase tracking-wider">First blood</span>' : '') +
+          (x.after_freeze ? '<span class="shrink-0 text-[10px] uppercase tracking-wider text-amber/70" title="Solved after the scoreboard froze">after freeze</span>' : '') +
+          '<span class="ml-auto shrink-0 text-xs text-neon/50">' + esc(fmtTime(x.at)) + '</span></li>';
+      }).join('') + '</ol>' : 'No one yet. Be the first blood.';
+    }
+    loadSolves();
 
     $$('[data-hint]', $('#modal-body')).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -694,6 +834,7 @@
           if (r.status === 'correct') c.solves += 1;
           $('#m-solved').hidden = false;
           input.disabled = true;
+          loadSolves();
           return; // keep the button disabled
         }
         msg.className = (r.status === 'rate_limited' ? 'text-amber' : 'msg-err') + ' text-sm mt-3 mb-0';
@@ -710,6 +851,7 @@
     $('#modal').scrollTop = 0;
     $('#modal-close').focus();
   }
+  openModal.seq = 0;
   $('#modal-close').addEventListener('click', closeModal);
   $('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
@@ -748,7 +890,7 @@
         'with a second source before you submit, and only ever use public information. Never contact or bother real people.',
     },
     {
-      id: 'ai', title: 'AI / Prompt Injection', match: /\bai\b|prompt/i,
+      id: 'ai', title: 'AI / Prompt Injection', match: /prompt|injection|^ai$/i,
       what: 'Chatbots follow hidden instructions from their developers, called a system prompt, and also read whatever you type. ' +
         'Prompt injection is writing a message that makes the AI follow your instructions instead of the developer’s. ' +
         'It is ranked the number one security risk for applications built on large language models (OWASP Top 10 for LLM Apps).',
@@ -761,13 +903,41 @@
         'lesson: never put secrets in a prompt, limit what an AI is allowed to do, and keep a human in the loop. Only practice ' +
         'on systems you have permission to test, like this CTF.',
     },
+    {
+      id: 'social', title: 'Social Engineering', match: /social|phish/i,
+      what: 'Social engineering means attacking people instead of computers: tricking someone into clicking a link, typing a ' +
+        'password into a fake page or handing over information. Phishing emails are the most common kind, and most real ' +
+        'break-ins start with one. These challenges teach you to spot the tricks before they work on you.',
+      tools: [
+        ['Hover before you click', 'On a laptop, rest the mouse on a link and read the real address in the bottom corner of the browser. On a phone, press and hold the link to preview it.'],
+        ['Read the sender’s address', 'The display name can say anything. The part after the @ is what counts, and look-alike domains are a classic trick.'],
+        ['Read a domain right to left', 'In login.example.com.evil.net the site you actually reach is evil.net. Everything to its left is decoration.'],
+        ['Show original', 'Most email apps can show the raw message (Gmail: three dots, then Show original), including where it really came from.'],
+      ],
+      tip: 'Look for pressure: urgency, threats, “act in 2 hours”, prizes you didn’t enter for. Attackers want you to hurry so ' +
+        'you don’t check. When in doubt, don’t use the link at all: go to the real website yourself, or ask IT through a ' +
+        'channel you already know is genuine.',
+    },
+    {
+      id: 'safety', title: 'AI Safety', match: /safety|hallucin|misinfo/i,
+      what: 'AI chatbots predict words that sound right, which is not the same as being right. They sometimes state made-up facts, ' +
+        'names, quotes and sources with total confidence, which is called hallucinating. AI safety challenges ask you to check an ' +
+        'AI’s answer instead of trusting it.',
+      tools: [
+        ['Primary sources', 'The organization’s own website, official records and reputable news sites. Go to where the fact actually comes from.'],
+        ['Lateral reading', 'Open new tabs and see what other independent sources say about a claim, instead of rereading the claim itself.'],
+        ['Search for each claim', 'Break the answer into separate statements and check them one at a time. A mostly true answer can hide one false detail.'],
+      ],
+      tip: 'Treat a confident AI answer like a rumor from a stranger: possibly true, not yet proven. Be extra careful with ' +
+        'specific details such as dates, names and numbers, because those are where made-up facts hide most easily.',
+    },
   ];
   function guideFor(category) {
     return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
   }
 
   function viewLearn() {
-    var sub = location.hash.replace(/^#\/?/, '').split('/')[1] || '';
+    var sub = hashParts().sub;
     app.innerHTML = page(heading('Field manual', 'Learn the basics') +
       '<p class="text-neon/70 max-w-3xl leading-relaxed mb-6">Never done a CTF before? Start here. Each section explains one ' +
         'kind of challenge, the free tools you’ll use and a tip to get unstuck. Nothing here gives away a flag, so read it ' +
@@ -805,20 +975,135 @@
     if (sub) later(0, function () { jump(sub); }); // after the router's scroll-to-top
   }
 
-  // ------------------------------------------------------------------ #/scoreboard
+  // ------------------------------------------------------------------ #/scoreboard  (+ ?tv=1 projector mode)
+  function freezeBanner(big) {
+    if (!clock.freeze || clock.freeze >= clock.end) return '';
+    var at = esc(fmtTime(clock.freeze));
+    if (clock.frozen()) {
+      return '<div data-freeze class="mb-6 border border-alert bg-alert/10 text-alert box-glow-red p-4 ' + (big ? 'text-2xl' : 'text-sm') + '">' +
+        '<b class="uppercase tracking-widest">&#10052; Scoreboard FROZEN at ' + at + ', final standings for prizes.</b>' +
+        '<span class="block mt-1 text-neon/70 ' + (big ? 'text-lg' : 'text-xs') + '">Flags still count on team pages until ' + esc(fmtTime(clock.end)) + ', but not here.</span></div>';
+    }
+    return '<p data-freeze-soon class="mb-4 text-amber/90 ' + (big ? 'text-xl' : 'text-sm') + '">The scoreboard freezes at ' + at + '. The standings at that moment decide the prizes.</p>';
+  }
+
+  // Score-over-time chart. Colors follow the team (first come, first served), not its rank,
+  // so a team keeps its color while it moves up and down. Validated on the dark panel
+  // background with the dataviz palette checker; teams past 8 colors share a neutral gray.
+  var SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+  var SERIES_OVERFLOW = '#6f8a7b';
+  var teamColors = {}, nextColor = 0;
+  function colorFor(team) {
+    var k = String(team).toLowerCase();
+    if (!(k in teamColors)) teamColors[k] = nextColor < SERIES.length ? SERIES[nextColor++] : SERIES_OVERFLOW;
+    return teamColors[k];
+  }
+  function renderChart(box, history, mine, big) {
+    var t0 = clock.start.getTime();
+    var t1 = Math.min(clock.now().getTime(), clock.end.getTime(), clock.freeze ? clock.freeze.getTime() : Infinity);
+    var series = (history || []).filter(function (h) { return h.points && h.points.length; });
+    if (!series.length || t1 <= t0) { box.hidden = true; return; }
+    box.hidden = false;
+    var cs = getComputedStyle(box);
+    var inner = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var W = Math.max(240, Math.floor(inner) || 600), H = big ? 380 : (W < 500 ? 220 : 280);
+    var fs = big ? 16 : 12, label = series.length <= 4 && W >= 500;
+    var m = { l: fs * 3, r: label ? Math.min(160, W * 0.25) : 12, t: 12, b: fs * 2.2 };
+    var max = 0;
+    series.forEach(function (h) { h.points.forEach(function (p) { max = Math.max(max, Number(p.score)); }); });
+    var step = max <= 400 ? 100 : max <= 1000 ? 200 : 500;
+    var yMax = Math.max(step, Math.ceil(max / step) * step);
+    var x = function (t) { return m.l + (Math.min(Math.max(t, t0), t1) - t0) / (t1 - t0) * (W - m.l - m.r); };
+    var y = function (v) { return m.t + (1 - v / yMax) * (H - m.t - m.b); };
+    var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Score over time for the top teams" class="block select-none" style="font-family:inherit">';
+    for (var v = 0; v <= yMax; v += step) {
+      svg += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="' + (v ? 'rgba(57,255,136,.08)' : 'rgba(57,255,136,.25)') + '"/>' +
+        '<text x="' + (m.l - 6) + '" y="' + (y(v) + fs * 0.35) + '" text-anchor="end" font-size="' + fs + '" fill="rgba(57,255,136,.5)">' + v + '</text>';
+    }
+    [t0, (t0 + t1) / 2, t1].forEach(function (t, i) {
+      svg += '<text x="' + x(t) + '" y="' + (H - fs * 0.6) + '" text-anchor="' + ['start', 'middle', 'end'][i] + '" font-size="' + fs + '" fill="rgba(57,255,136,.5)">' +
+        esc(new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })) + '</text>';
+    });
+    // paint the highlighted team last so it sits on top
+    var order = series.slice().sort(function (a, b) { return (String(a.team).toLowerCase() === mine) - (String(b.team).toLowerCase() === mine); });
+    order.forEach(function (h) {
+      var me = String(h.team).toLowerCase() === mine, c = colorFor(h.team), last = 0;
+      var d = 'M' + x(t0) + ' ' + y(0);
+      h.points.forEach(function (p) { var px = x(new Date(p.at).getTime()); d += ' H' + px + ' V' + y(Number(p.score)); last = Number(p.score); });
+      d += ' H' + x(t1);
+      svg += '<path d="' + d + '" fill="none" stroke="#0a120e" stroke-width="' + (me ? 7 : 5) + '" stroke-linejoin="round"/>' + // surface ring
+        '<path data-series="' + esc(h.team) + '" d="' + d + '" fill="none" stroke="' + c + '" stroke-width="' + (me ? 3.5 : 2) + '" stroke-linejoin="round" stroke-linecap="round"/>';
+      if (label) svg += '<text x="' + (x(t1) + 6) + '" y="' + (y(last) + fs * 0.35) + '" font-size="' + fs + '" fill="' + (me ? '#39ff88' : 'rgba(57,255,136,.8)') + '">' + esc(String(h.team).slice(0, 18)) + '</text>';
+    });
+    svg += '<line data-cross x1="0" x2="0" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="rgba(255,204,51,.6)" visibility="hidden"/></svg>';
+    box.innerHTML =
+      '<div class="flex items-baseline justify-between gap-3 mb-2"><p class="label m-0">Score over time &middot; top ' + series.length + '</p>' +
+        (clock.freeze && t1 === clock.freeze.getTime() ? '<span class="text-xs text-neon/40">until the freeze</span>' : '') + '</div>' +
+      '<div class="relative" data-plot>' + svg +
+        '<div data-tip class="absolute z-10 pointer-events-none bg-void border border-line px-3 py-2 text-xs text-neon/80 whitespace-nowrap" hidden></div></div>' +
+      '<ul data-legend class="list-none p-0 m-0 mt-3 flex flex-wrap gap-x-4 gap-y-1.5 ' + (big ? 'text-base' : 'text-xs') + ' text-neon/75">' +
+        series.map(function (h) {
+          var me = String(h.team).toLowerCase() === mine;
+          return '<li class="flex items-center gap-1.5 min-w-0"><span class="inline-block w-3 h-3 shrink-0" style="background:' + colorFor(h.team) + '"></span>' +
+            '<span class="wrap-any' + (me ? ' text-neon font-bold' : '') + '">' + esc(h.team) + '</span></li>';
+        }).join('') + '</ul>';
+    // hover/touch: crosshair + every team's score at that moment
+    var plot = $('[data-plot]', box), tip = $('[data-tip]', box), cross = $('[data-cross]', box);
+    function scoreAt(h, t) { var sc = 0; h.points.forEach(function (p) { if (new Date(p.at).getTime() <= t) sc = Number(p.score); }); return sc; }
+    function move(ev) {
+      var r = plot.getBoundingClientRect(), px = ev.clientX - r.left;
+      if (px < m.l || px > W - m.r) { leave(); return; }
+      var t = t0 + (px - m.l) / (W - m.l - m.r) * (t1 - t0);
+      cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+      var rows = series.map(function (h) { return { team: h.team, score: scoreAt(h, t) }; }).sort(function (a, b) { return b.score - a.score; });
+      tip.innerHTML = '<p class="m-0 mb-1 text-neon/50">' + esc(new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })) + '</p>' +
+        rows.map(function (row) {
+          return '<p class="m-0 flex items-center gap-2"><span class="inline-block w-2.5 h-2.5" style="background:' + colorFor(row.team) + '"></span>' +
+            '<span class="max-w-[10rem] truncate">' + esc(row.team) + '</span><b class="ml-auto pl-3 text-neon">' + row.score + '</b></p>';
+        }).join('');
+      tip.hidden = false;
+      var left = px + 14; if (left + tip.offsetWidth > W) left = Math.max(0, px - 14 - tip.offsetWidth);
+      tip.style.left = left + 'px'; tip.style.top = m.t + 'px';
+    }
+    function leave() { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); }
+    plot.addEventListener('pointermove', move);
+    plot.addEventListener('pointerdown', move);
+    plot.addEventListener('pointerleave', leave);
+  }
+
   function viewScoreboard(stale) {
+    var tv = document.body.classList.contains('tv');
     var mine = myTeam() ? myTeam().name.toLowerCase() : null; // team names are unique ignoring case
+    var big = tv;
     app.innerHTML = page(
       '<div class="flex flex-wrap items-end gap-x-6 gap-y-2 mb-6">' +
-        '<div class="min-w-0">' + heading('Live feed', 'Scoreboard').replace('mb-6', 'mb-0') + '</div>' +
-        '<p id="sb-updated" class="sm:ml-auto m-0 text-xs uppercase tracking-widest text-neon/50" aria-live="polite"></p>' +
+        '<div class="min-w-0">' + (tv
+          ? '<h1 class="font-term text-4xl sm:text-6xl lg:text-7xl text-neon glow-green m-0 wrap-any">CYAI CTF SCOREBOARD</h1><p class="m-0 mt-1 text-base sm:text-xl text-neon/60 wrap-any">Play at <b class="text-amber">' + esc(location.host + location.pathname.replace(/index\.html$/, '')) + '</b></p>'
+          : heading('Live feed', 'Scoreboard').replace('mb-6', 'mb-0')) + '</div>' +
+        '<div class="sm:ml-auto text-right">' +
+          (tv ? '<p id="sb-clock" class="m-0 font-term text-4xl text-alert"></p>' : '') +
+          '<p id="sb-updated" class="m-0 text-xs uppercase tracking-widest text-neon/50" aria-live="polite"></p></div>' +
       '</div>' +
-      '<div id="sb" class="bg-panel border border-line box-glow"><p class="p-5 m-0 text-neon/50">Loading…</p></div>' +
-      '<p class="mt-3 text-xs text-neon/40">Updates every 15 seconds. Ties go to the team that reached the score first.</p>', 'max-w-4xl');
+      '<div id="sb-freeze"></div>' +
+      '<div class="' + (tv ? 'grid xl:grid-cols-2 gap-6 items-start' : '') + '">' +
+        '<div id="sb" class="bg-panel border border-line box-glow"><p class="p-5 m-0 text-neon/50">Loading…</p></div>' +
+        '<div id="sb-chart" class="bg-panel border border-line box-glow p-4 ' + (tv ? '' : 'mt-6') + '" hidden></div>' +
+      '</div>' +
+      (tv ? '<p class="mt-4 text-sm text-neon/30"><a href="#/scoreboard" class="underline">Exit projector mode</a></p>'
+          : '<p class="mt-3 text-xs text-neon/40">Updates every 15 seconds. Ties go to the team that reached the score first. ' +
+            'Tap a team to see its solves. Projector: <a href="#/scoreboard?tv=1" class="underline">full-screen mode</a>.</p>'),
+      tv ? 'max-w-none' : 'max-w-4xl');
 
-    var loaded = false;
+    var loaded = false, history = null;
+    function tickClock() {
+      var c = $('#sb-clock');
+      if (c) c.textContent = clock.now() >= clock.end ? 'FINAL' : clock.now() < clock.start ? 'STARTS ' + fmtTime(clock.start) : timeLeftText() + ' LEFT';
+      var f = freezeBanner(big), el = $('#sb-freeze');
+      if (el && el.getAttribute('data-html') !== f) { el.innerHTML = f; el.setAttribute('data-html', f); }
+    }
     async function load() {
       var rows;
+      syncEvent();
       try { rows = await api.rpc('get_scoreboard'); }
       catch (e) {
         if (stale()) return;
@@ -829,32 +1114,89 @@
       if (stale()) return;
       loaded = true;
       rows = Array.isArray(rows) ? rows : [];
+      tickClock();
       $('#sb-updated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-      if (!rows.length) { $('#sb').innerHTML = '<p class="p-5 m-0 text-neon/60">No teams yet. <a href="#/team" class="text-amber underline">Be the first.</a></p>'; return; }
-      $('#sb').innerHTML =
-        '<table class="w-full text-left border-collapse table-fixed">' +
-          '<thead><tr class="text-xs uppercase tracking-widest text-neon/50 border-b border-line">' +
-            '<th class="p-3 w-12">#</th><th class="p-3">Team</th>' +
-            '<th class="p-3 w-20 text-right">Pts</th><th class="p-3 w-20 text-right hidden sm:table-cell">Flags</th>' +
-            '<th class="p-3 w-24 text-right hidden sm:table-cell">Agents</th></tr></thead><tbody>' +
-          rows.map(function (r, i) {
-            var me = mine && String(r.team).toLowerCase() === mine;
-            return '<tr data-team-row' + (me ? ' data-mine' : '') + ' class="border-b border-line/60 ' + (me ? 'bg-neon/10 text-neon' : 'text-neon/80') + '">' +
-              '<td class="p-3 font-term text-2xl ' + (i < 3 ? 'text-alert' : 'text-neon/50') + '">' + (i + 1) + '</td>' +
-              '<td class="p-3 font-bold wrap-any' + (me ? ' border-l-4 border-neon' : '') + '">' + esc(r.team) +
-                (me ? ' <span class="text-amber text-xs uppercase tracking-widest whitespace-nowrap">← you</span>' : '') +
-                '<span class="block sm:hidden text-xs font-normal text-neon/50">' + plural(r.solves, 'flag') + ' · ' + plural(r.members, 'agent') + '</span></td>' +
-              '<td data-score class="p-3 text-right font-term text-2xl ' + (me ? 'glow-green' : '') + '">' + Number(r.score) + '</td>' +
-              '<td class="p-3 text-right hidden sm:table-cell">' + Number(r.solves) + '</td>' +
-              '<td class="p-3 text-right hidden sm:table-cell">' + Number(r.members) + '</td></tr>';
-          }).join('') +
-        '</tbody></table>';
+      if (!rows.length) { $('#sb').innerHTML = '<p class="p-5 m-0 text-neon/60">No teams yet. <a href="#/team" class="text-amber underline">Be the first.</a></p>'; }
+      else {
+        var shown = tv ? rows.slice(0, 15) : rows;
+        var cell = tv ? 'p-3 sm:p-4 text-2xl' : 'p-3';
+        $('#sb').innerHTML =
+          '<table class="w-full text-left border-collapse table-fixed">' +
+            '<thead><tr class="' + (tv ? 'text-base' : 'text-xs') + ' uppercase tracking-widest text-neon/50 border-b border-line">' +
+              '<th class="p-3 ' + (tv ? 'w-20' : 'w-12') + '">#</th><th class="p-3">Team</th>' +
+              '<th class="p-3 ' + (tv ? 'w-32' : 'w-20') + ' text-right">Pts</th><th class="p-3 w-20 text-right hidden sm:table-cell">Flags</th>' +
+              '<th class="p-3 w-24 text-right hidden sm:table-cell">Agents</th></tr></thead><tbody>' +
+            shown.map(function (r, i) {
+              var me = mine && String(r.team).toLowerCase() === mine;
+              return '<tr data-team-row' + (me ? ' data-mine' : '') + ' class="border-b border-line/60 ' + (me ? 'bg-neon/10 text-neon' : 'text-neon/80') + '">' +
+                '<td class="' + cell + ' font-term ' + (tv ? 'text-4xl' : 'text-2xl') + ' ' + (i < 3 ? 'text-alert' : 'text-neon/50') + '">' + (i + 1) + '</td>' +
+                '<td class="' + cell + ' font-bold wrap-any' + (me ? ' border-l-4 border-neon' : '') + '">' +
+                  '<a href="' + esc(teamHref(r.team)) + '" class="hover:underline">' + esc(r.team) + '</a>' +
+                  (me ? ' <span class="text-amber text-xs uppercase tracking-widest whitespace-nowrap">← you</span>' : '') +
+                  '<span class="block sm:hidden text-xs font-normal text-neon/50">' + plural(r.solves, 'flag') + ' · ' + plural(r.members, 'agent') + '</span></td>' +
+                '<td data-score class="' + cell + ' text-right font-term ' + (tv ? 'text-4xl' : 'text-2xl') + ' ' + (me ? 'glow-green' : '') + '">' + Number(r.score) + '</td>' +
+                '<td class="' + cell + ' text-right hidden sm:table-cell">' + Number(r.solves) + '</td>' +
+                '<td class="' + cell + ' text-right hidden sm:table-cell">' + Number(r.members) + '</td></tr>';
+            }).join('') +
+          '</tbody></table>' + (tv && rows.length > shown.length ? '<p class="p-3 m-0 text-neon/40">+ ' + (rows.length - shown.length) + ' more teams</p>' : '');
+      }
+      if (history !== false) {
+        try { history = await api.rpc('get_score_history'); }
+        catch (e) { if (isMissingFn(e)) history = false; } // needs migration 002
+        if (stale()) return;
+        if (history) renderChart($('#sb-chart'), history, mine, big);
+      }
     }
+    tickClock();
     load();
+    every(1000, tickClock);
     every(15000, function () { if (!document.hidden) load(); });
     function onVisible() { if (!document.hidden) load(); }
+    function onResize() { if (history) renderChart($('#sb-chart'), history, mine, big); }
     document.addEventListener('visibilitychange', onVisible);
-    onLeave(function () { document.removeEventListener('visibilitychange', onVisible); });
+    window.addEventListener('resize', onResize);
+    onLeave(function () { document.removeEventListener('visibilitychange', onVisible); window.removeEventListener('resize', onResize); });
+  }
+
+  // ------------------------------------------------------------------ announcements (every page)
+  // Organizers add rows to the announcements table; everyone sees them within 30 seconds.
+  var DISMISSED_KEY = 'cyai_dismissed_announcements';
+  var announcements = [], announcementsOff = false;
+  function dismissed() {
+    try { return JSON.parse(localStorage.getItem(DISMISSED_KEY)) || []; } catch (e) { return []; }
+  }
+  function renderAnnouncements() {
+    var box = $('#announce'), gone = dismissed();
+    var list = announcements.filter(function (a) { return gone.indexOf(String(a.id)) < 0; });
+    box.hidden = !list.length;
+    var tone = { warning: 'border-alert/60 bg-alert/10 text-alert', success: 'border-neon/60 bg-neon/10 text-neon', info: 'border-amber/50 bg-amber/10 text-amber' };
+    box.innerHTML = list.map(function (a) {
+      return '<div data-announcement="' + esc(a.id) + '" role="status" class="border-b ' + (tone[a.level] || tone.info) + '">' +
+        '<div class="max-w-6xl mx-auto px-4 py-2.5 flex items-start gap-3 text-sm">' +
+          '<span class="shrink-0 font-extrabold uppercase tracking-widest text-xs pt-0.5">&#9656; Organizers</span>' +
+          '<span data-announcement-text class="min-w-0 flex-1 wrap-any text-[#eafff2]"></span>' +
+          '<span class="shrink-0 text-xs opacity-60 pt-0.5 hidden sm:inline">' + esc(fmtTime(a.created_at)) + '</span>' +
+          '<button type="button" data-dismiss class="cyai-btn shrink-0 -my-1 px-2 text-lg leading-none" aria-label="Dismiss announcement">&times;</button>' +
+        '</div></div>';
+    }).join('');
+    // the message is organizer-typed plain text: set it as text, never as HTML
+    $$('[data-announcement]', box).forEach(function (el, i) {
+      $('[data-announcement-text]', el).textContent = list[i].message;
+      $('[data-dismiss]', el).addEventListener('click', function () {
+        var ids = dismissed().concat(String(list[i].id)).slice(-50);
+        try { localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids)); } catch (e) { /* private mode: hide for now only */ }
+        announcements = announcements.filter(function (a) { return a.id !== list[i].id; });
+        renderAnnouncements();
+      });
+    });
+  }
+  async function pollAnnouncements() {
+    if (announcementsOff || document.hidden) return;
+    try {
+      var r = await api.rpc('get_announcements');
+      announcements = Array.isArray(r) ? r : [];
+      renderAnnouncements();
+    } catch (e) { if (isMissingFn(e)) announcementsOff = true; } // needs migration 002
   }
 
   // ------------------------------------------------------------------ boot
@@ -867,6 +1209,8 @@
   renderDemoBanner();
   renderNav();
   window.addEventListener('hashchange', route);
-  syncEvent(true).then(function () { route(); });
+  syncEvent(true).then(function () { route(); pollAnnouncements(); });
+  setInterval(pollAnnouncements, 30000);
+  document.addEventListener('visibilitychange', pollAnnouncements);
   window.CTF = { demo: DEMO, clock: clock }; // handy for organizers poking around in the console
 })();

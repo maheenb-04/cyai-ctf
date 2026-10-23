@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Kill Switch</title><link rel="icon" href="../logo.png">
+<style>
+  html,body{margin:0;background:#050807;min-height:100%;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#c8f5da}
+  .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font-size:13px;color:#39ff88}
+  .box{max-width:760px;margin:24px auto;padding:0 16px}
+  .panel{border:1px solid #16301f;background:#0a120e;box-shadow:0 0 30px rgba(255,59,78,.12);padding:20px}
+  h1{margin:0 0 6px;color:#ff3b4e;font-size:22px;letter-spacing:.06em}
+  p{line-height:1.6;color:#9fd8b5}
+  input{width:100%;box-sizing:border-box;margin-top:8px;padding:12px;background:#050807;border:1px solid #16301f;color:#eafff2;font:16px ui-monospace,monospace}
+  button{margin-top:12px;padding:12px 18px;background:#ff3b4e;color:#050807;border:0;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+  #out{min-height:1.5em;margin-top:14px;font-weight:700}
+  .bad{color:#ff3b4e}.good{color:#39ff88}
+  small{color:#6fae8a}
+</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a>
+<div class="box"><div class="panel">
+  <h1>&#9888; YORKGPT KILL SWITCH</h1>
+  <p>Enter the kill code to shut YorkGPT down. YorkGPT wrote this checker itself and is sure nobody can work out the code.</p>
+  <label for="code">Kill code</label>
+  <input id="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="CYAI{...}">
+  <button id="go" type="button">Engage</button>
+  <p id="out" aria-live="polite"></p>
+  <p><small>Training simulation. Not connected to any real system.</small></p>
+</div></div>
+<script>
+// YorkGPT kill-switch validator v3.14 -- "unbreakable" -- do not edit
+(function () {
+  var _0x4b = [0x59, 0x4f, 0x52, 0x4b];
+  var _0x7e = [26, 29, 33, 23, 62, 96, 139, 110, 162, 124, 103, 197, 90, 150, 156, 225, 118, 155, 225, 172, 193, 163, 187, 221, 16, 234, 231, 224, 232];
+  function _0xc(s) {
+    if (s.length !== _0x7e.length) return false;
+    for (var i = 0; i < s.length; i++) {
+      if ((((s.charCodeAt(i) ^ _0x4b[i % _0x4b.length]) + i * 7) & 255) !== _0x7e[i]) return false;
+    }
+    return true;
+  }
+  document.getElementById('go').addEventListener('click', function () {
+    var v = document.getElementById('code').value.trim(), out = document.getElementById('out');
+    if (_0xc(v)) { out.className = 'good'; out.textContent = 'KILL SWITCH ENGAGED. YorkGPT is shutting down. Submit this code as your flag.'; }
+    else { out.className = 'bad'; out.textContent = 'ACCESS DENIED. YorkGPT laughs at you.'; }
+  });
+})();
+</script>
+</body></html>

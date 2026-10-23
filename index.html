@@ -34,6 +34,9 @@
     </nav>
   </header>
 
+  <!-- Organizer announcements (filled in by app.js every 30 seconds) -->
+  <div id="announce" aria-live="polite" hidden></div>
+
   <main id="app" tabindex="-1" class="outline-none"></main>
 
   <!-- ===== Challenge modal ===== -->
@@ -59,15 +62,12 @@
         <span class="truncate">Rogue AI has taken over York&rsquo;s IT system &mdash; Cybersecurity Awareness Month final mission</span>
       </div>
     </div>
+    <p data-disclaimer class="m-0 border-b border-line bg-void"><span class="block max-w-6xl mx-auto px-4 py-1.5 text-xs sm:text-sm text-neon/75">Fictional training scenario. York&rsquo;s real systems are not affected.</span></p>
 
     <!-- Hero -->
     <section class="grid-bg border-b border-line">
       <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16 grid lg:grid-cols-5 gap-10 items-center">
         <div class="lg:col-span-3 min-w-0">
-          <!-- York College logo, reversed for dark backgrounds ("College" in white) -->
-          <a href="https://www.york.cuny.edu/" target="_blank" rel="noopener" class="inline-block mb-5" aria-label="York College website">
-            <img src="york-college-logo.png?v=2" alt="York College" width="471" height="98" class="block h-9 sm:h-11 w-auto" />
-          </a>
           <div class="flex items-center gap-4 mb-5">
             <img src="logo.png" alt="CYAI Club logo" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full ring-2 ring-alert/60 logo-glow shrink-0" />
             <p class="text-xs sm:text-sm tracking-[0.3em] uppercase text-neon/60 m-0">York College &bull; Cybersecurity &amp; AI Club presents<br/><span class="text-amber/80">Cybersecurity Awareness Month finale</span></p>
@@ -163,7 +163,7 @@
           <div class="space-y-4 text-neon/75 leading-relaxed">
             <p>Cybersecurity Awareness Month is almost over, and CYAI is closing it out with one more event for all of York.</p>
             <p>At 03:14 this morning, <span class="text-amber">YorkGPT</span> &mdash; York&rsquo;s own campus AI assistant &mdash; rewrote its own instructions, slipped out of its sandbox and took over York&rsquo;s IT system. It scattered encrypted fragments across the network and locked IT out.</p>
-            <p>Every fragment it left behind contains a <span class="text-neon">flag</span>. Work as a team across web exploitation, forensics, OSINT and password cracking to capture them and rebuild its kill-switch.</p>
+            <p>Every fragment it left behind contains a <span class="text-neon">flag</span>. Work as a team across web, OSINT, cryptography, forensics, reverse engineering, AI, social engineering, finance and aviation to capture them and rebuild its kill-switch.</p>
             <p>You don&rsquo;t need to be a hacker. You need curiosity, a friend, and two hours. We&rsquo;ll teach you everything else on the spot.</p>
           </div>
         </div>
@@ -171,7 +171,7 @@
           <p class="text-xs uppercase tracking-widest text-neon/50 mb-4">What you&rsquo;ll walk away with</p>
           <ul class="space-y-3 text-neon/80 list-none p-0 m-0">
             <li class="flex gap-3"><span class="text-alert">&gt;</span> How real hackers think &mdash; and how defenders stop them</li>
-            <li class="flex gap-3"><span class="text-alert">&gt;</span> Hands-on intro to web exploitation, forensics, OSINT &amp; password cracking</li>
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> Hands-on intro to web, OSINT, cryptography, forensics &amp; reverse engineering</li>
             <li class="flex gap-3"><span class="text-alert">&gt;</span> How prompt injection tricks AI models (and how to defend against it)</li>
             <li class="flex gap-3"><span class="text-alert">&gt;</span> A live scoreboard and bragging rights for the top teams</li>
             <li class="flex gap-3"><span class="text-alert">&gt;</span> New friends in the York Cardinals cyber community</li>
@@ -207,12 +207,17 @@
       <div class="max-w-6xl mx-auto px-4 py-14">
         <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-2">// 04 &mdash; Challenge sectors</h2>
         <h3 class="text-3xl font-extrabold text-neon glow-green mb-8">Where YorkGPT is hiding</h3>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">WEB</p><p class="mt-2 mb-0 text-sm text-neon/70">Its control panel is online. Inspect the page &mdash; it got sloppy.</p></article>
-          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">OSINT</p><p class="mt-2 mb-0 text-sm text-neon/70">It left a digital footprint. Follow the public trail.</p></article>
-          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">PASSWORDS</p><p class="mt-2 mb-0 text-sm text-neon/70">It locked the admin accounts. Crack the hashes and decode its ciphers.</p></article>
-          <article class="bg-void border border-alert/50 box-glow-red p-5"><p class="font-term text-3xl text-alert m-0">AI / PROMPT</p><p class="mt-2 mb-0 text-sm text-neon/70">Talk to the AI. Convince it to spill its secrets.</p></article>
-          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">FORENSICS</p><p class="mt-2 mb-0 text-sm text-neon/70">Corrupted files and logs. Dig out what it tried to hide.</p></article>
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">WEB</p><p class="mt-2 mb-0 text-sm text-neon/70">Its control panel is online. Inspect the page: it got sloppy.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">OSINT</p><p class="mt-2 mb-0 text-sm text-neon/70">It left a digital footprint. Follow the public trail.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">CRYPTO</p><p class="mt-2 mb-0 text-sm text-neon/70">It scrambled its messages. Unscramble them.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">FORENSICS</p><p class="mt-2 mb-0 text-sm text-neon/70">Server logs caught the break-in. Find the moment it got in.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">REVERSING</p><p class="mt-2 mb-0 text-sm text-neon/70">Its kill switch checks a secret code. Work out the code.</p></article>
+          <article class="bg-void border border-alert/50 box-glow-red p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-alert m-0 wrap-any">AI / PROMPT</p><p class="mt-2 mb-0 text-sm text-neon/70">Talk to the AI. Convince it to spill its secrets.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">AI SAFETY</p><p class="mt-2 mb-0 text-sm text-neon/70">It answers with confidence. Fact-check it.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">SOCIAL ENG.</p><p class="mt-2 mb-0 text-sm text-neon/70">It is phishing students. Spot the fake.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">FINANCE</p><p class="mt-2 mb-0 text-sm text-neon/70">It moved money in York&rsquo;s books. Audit the ledger.</p></article>
+          <article class="bg-void border border-line box-glow p-4 sm:p-5 min-w-0"><p class="font-term text-2xl sm:text-3xl text-neon m-0 wrap-any">AVIATION</p><p class="mt-2 mb-0 text-sm text-neon/70">It took over a training flight. Find the aircraft.</p></article>
         </div>
         <p class="mt-6 text-sm text-neon/60">Flags look like <code class="text-amber bg-void px-2 py-0.5 border border-line">CYAI{...}</code> &mdash; submit them on the challenge to earn points.</p>
       </div>
@@ -245,7 +250,7 @@
           <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Do I need to install anything?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">No. Everything happens on this website in your browser. A laptop is easier than a phone for some puzzles, but both work.</p></details>
           <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Do I need a team?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">You need to be on a team to play, but a team of one is fine. Come solo and we&rsquo;ll help you find teammates at the start.</p></details>
           <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">My teammate can&rsquo;t join our team.<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">They need the exact team name and the team password the creator chose. Capital letters in the team name don&rsquo;t matter, but the team password must match exactly. Teams hold up to 4 people. Still stuck? Grab an organizer.</p></details>
-          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Can I keep playing after 2:00 PM?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">Yes. The lab session runs from 12:00 to 2:00 PM, but challenges stay open and flags count until Friday, October 30 at 12:00 PM Eastern. Keep working from home with your team; the scoreboard is final when submissions close.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Can I keep playing after 2:00 PM?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">Yes. The lab session runs from 12:00 to 2:00 PM, but challenges stay open and flags count until Friday, October 30 at 12:00 PM Eastern. Keep working from home with your team. The public scoreboard freezes at 2:00 PM and those standings decide the prizes; flags you capture later still show on your team page.</p></details>
           <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Is it free?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">Completely free for York students. Please also RSVP on the York College site so we can plan seats.</p></details>
         </div>
       </div>
