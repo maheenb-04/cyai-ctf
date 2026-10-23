@@ -90,7 +90,7 @@
   // and its "now" corrects students whose phone clocks are off.
   var clock = {
     start: new Date(C.EVENT_START || '2026-10-29T12:00:00-04:00'),
-    end: new Date(C.EVENT_END || '2026-10-29T14:00:00-04:00'),
+    end: new Date(C.EVENT_END || '2026-10-30T12:00:00-04:00'),
     skew: 0, teamSize: 4, synced: 0,
     now: function () { return new Date(Date.now() + this.skew); },
   };
@@ -241,7 +241,7 @@
         diff = Math.floor((clock.end - now) / 1000);
         q('label').textContent = 'Mission live — time remaining';
         q('grid').hidden = false;
-        q('days').textContent = '00';
+        q('days').textContent = pad(Math.floor(diff / 86400));
         st.hidden = false;
         st.className = 'mt-6 text-2xl sm:text-4xl font-extrabold text-alert glow-red';
         st.innerHTML = '&#9888; CHALLENGES ARE LIVE &mdash; <a href="#/challenges" class="underline">go hunt flags</a>';

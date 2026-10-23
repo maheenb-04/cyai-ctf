@@ -2,24 +2,24 @@
 
 CYAI's fall Capture The Flag at York College.
 
-Play here: https://cyaictf.netlify.app/
+Play here:
+- https://cyaictf.netlify.app/
+- https://maheenb-04.github.io/cyai-ctf/
 
-Backup link (same site, same accounts and scores): https://maheenb-04.github.io/cyai-ctf/
-
-Thursday, October 29, 2026, 12:00 to 2:00 PM Eastern, AC-3E07 (UCRC Computer Lab)
+Both links are the same site with the same accounts and scoreboard. Pick one and stick with it, because your login won't carry over to the other.
 
 <a href="https://cyaictf.netlify.app/"><img src=".github/preview-desktop.png" alt="Homepage on a laptop" width="74%"></a>
 <a href="https://cyaictf.netlify.app/"><img src=".github/preview-phone.png" alt="Homepage on a phone" width="22%"></a>
 
-The Rogue AI Recovery is a two-hour, beginner-friendly CTF run by the York College Cybersecurity & AI
-Club. Teams of up to four work through web, OSINT and prompt injection challenges and submit flags
+The Rogue AI Recovery is a beginner-friendly CTF run by the York College Cybersecurity & AI Club. It starts
+with a two-hour session in the lab, and the challenges stay open for 24 hours after that. Teams of up to four work through web, OSINT and prompt injection challenges and submit flags
 in the format `CYAI{...}`. Everything runs in the browser, so a phone or laptop is all you need.
 
 ## How to play
 
 1. Register on the site with a username, email and password.
 2. Create a team, or join one with the team name and password from a teammate.
-3. Challenges open at 12:00 PM on October 29.
+3. Challenges open at 12:00 PM Eastern on October 29 and close at 12:00 PM on October 30.
 4. Solve a challenge, submit the flag, and check the scoreboard.
 
 ## Rules

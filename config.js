@@ -19,5 +19,5 @@ window.CTF_CONFIG = {
   // event_settings table instead (that's what actually locks challenges),
   // so these only matter for demo mode and the first split second of page load.
   EVENT_START: '2026-10-29T12:00:00-04:00',
-  EVENT_END:   '2026-10-29T14:00:00-04:00',
+  EVENT_END:   '2026-10-30T12:00:00-04:00',  // flags accepted for 24 hours
 };
