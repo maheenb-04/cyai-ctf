@@ -180,7 +180,7 @@
   function every(ms, fn) { var t = setInterval(fn, ms); onLeave(function () { clearInterval(t); }); }
   function later(ms, fn) { var t = setTimeout(fn, ms); onLeave(function () { clearTimeout(t); }); }
 
-  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard };
+  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn };
 
   async function route() {
     cleanups.forEach(function (f) { f(); });
@@ -659,6 +659,8 @@
         return '<div><button type="button" data-hint="' + i + '" class="cyai-btn w-full text-left px-4 py-2.5 border border-amber/40 text-amber text-sm">&#9656; Reveal hint ' + (i + 1) + '</button>' +
           '<div data-hint-body="' + i + '" class="ctf-html text-sm text-neon/80 bg-void border border-amber/30 p-3 wrap-any" hidden>' + h + '</div></div>';
       }).join('') + '</div>' : '') +
+      (guideFor(c.category) ? '<p class="mt-4 mb-0 text-sm text-neon/60">New to ' + esc(guideFor(c.category).title) + ' challenges? ' +
+        '<a href="#/learn/' + guideFor(c.category).id + '" class="text-amber underline">Read the beginner guide</a></p>' : '') +
       '<div id="m-solved" class="mt-5 bg-neon/10 border border-neon p-3 text-neon font-bold"' + (c.solved ? '' : ' hidden') + '>&#10003; Your team solved this one.</div>' +
       '<form id="flag-form" class="mt-5" novalidate' + (c.solved ? ' hidden' : '') + '>' +
         '<label class="label" for="flag-input">Flag</label>' +
@@ -711,6 +713,97 @@
   $('#modal-close').addEventListener('click', closeModal);
   $('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+
+  // ------------------------------------------------------------------ #/learn  beginner guides
+  // General know-how per category. Keep these free of anything specific to a
+  // challenge (pages, names, answers): the per-challenge hints cover that.
+  // To add a category, add an entry; `match` is tested against challenge categories.
+  var GUIDES = [
+    {
+      id: 'web', title: 'Web', match: /web/i,
+      what: 'A website is code your browser downloads and runs: HTML for structure, CSS for looks and JavaScript for behavior. ' +
+        'Web challenges ask you to look at how a site is built and what it sends back and forth, because anything the server ' +
+        'sends to your browser is something you can read.',
+      tools: [
+        ['View Page Source', 'Ctrl+U on Windows, Cmd+Option+U on a Mac. Shows the raw HTML exactly as the server sent it.'],
+        ['Developer Tools', 'F12, or right-click a page and choose Inspect. The Elements tab shows the live page, Console runs JavaScript, Network lists every file the page loads.'],
+        ['Find on page', 'Ctrl+F or Cmd+F inside the source or DevTools to search for words like "flag", "admin" or "password".'],
+        ['A laptop', 'Phones hide most of these tools. If you only have a phone, team up with someone who has a laptop for this category.'],
+      ],
+      tip: 'Read everything the page gives you, not just what it displays. Developers leave behind notes, old links, test data ' +
+        'and unused code, and a login form that looks like the only way in usually isn’t.',
+    },
+    {
+      id: 'osint', title: 'OSINT', match: /osint/i,
+      what: 'OSINT stands for Open Source Intelligence: answering questions using only information that is already public, such as ' +
+        'websites, news articles, social media, records and old copies of web pages. Investigators, journalists and security ' +
+        'teams use it every day.',
+      tools: [
+        ['Search operators', '"exact phrase" matches words in order, site:york.cuny.edu searches one website, filetype:pdf finds documents, and -word excludes a word.'],
+        ['Wayback Machine', 'web.archive.org shows what a website looked like years ago, including pages that have since changed or been deleted.'],
+        ['Reverse image search', 'Google Lens or images.google.com tell you where a photo has appeared before.'],
+        ['Official sources', 'An organization’s own website, Wikipedia (check its sources at the bottom) and government or school records.'],
+      ],
+      tip: 'Read the question carefully: it tells you exactly what to find and what format the answer needs. Confirm every fact ' +
+        'with a second source before you submit, and only ever use public information. Never contact or bother real people.',
+    },
+    {
+      id: 'ai', title: 'AI / Prompt Injection', match: /\bai\b|prompt/i,
+      what: 'Chatbots follow hidden instructions from their developers, called a system prompt, and also read whatever you type. ' +
+        'Prompt injection is writing a message that makes the AI follow your instructions instead of the developer’s. ' +
+        'It is ranked the number one security risk for applications built on large language models (OWASP Top 10 for LLM Apps).',
+      tools: [
+        ['The chat box', 'That’s all you need. No code or downloads.'],
+        ['Notes', 'Keep track of what you tried and exactly how the AI replied. Small changes in wording can change everything.'],
+        ['Known approaches', 'Researchers study role-play, asking a model about its own instructions, and asking for answers in a different format. Think about why each might work.'],
+      ],
+      tip: 'If asking directly fails, don’t repeat the same request louder: change the framing. And remember the defender’s ' +
+        'lesson: never put secrets in a prompt, limit what an AI is allowed to do, and keep a human in the loop. Only practice ' +
+        'on systems you have permission to test, like this CTF.',
+    },
+  ];
+  function guideFor(category) {
+    return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
+  }
+
+  function viewLearn() {
+    var sub = location.hash.replace(/^#\/?/, '').split('/')[1] || '';
+    app.innerHTML = page(heading('Field manual', 'Learn the basics') +
+      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-6">Never done a CTF before? Start here. Each section explains one ' +
+        'kind of challenge, the free tools you’ll use and a tip to get unstuck. Nothing here gives away a flag, so read it ' +
+        'as much as you like, even during the event.</p>' +
+      '<div class="flex flex-wrap gap-2 mb-10">' + GUIDES.map(function (g) {
+        return '<button type="button" data-jump="' + g.id + '" class="cyai-btn px-3 py-2 border border-neon/40 text-neon text-sm uppercase tracking-wider">' + g.title + '</button>';
+      }).join('') + '</div>' +
+
+      '<section class="card mb-8"><h2 class="font-term text-3xl text-neon m-0 mb-3">HOW A CTF WORKS</h2>' +
+        '<ul class="list-none p-0 m-0 space-y-2 text-neon/75 leading-relaxed">' +
+          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Every challenge hides a flag that looks like <code class="text-amber">CYAI{...}</code>. Find it, paste it into the challenge, and your team scores the points.</span></li>' +
+          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Capital letters and extra spaces don’t matter, but everything else must match exactly, including the brackets.</span></li>' +
+          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Each challenge has hints. They’re free, so open them whenever you’re stuck.</span></li>' +
+          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Guessing doesn’t work: you get 10 tries a minute. Split up the challenges with your team and talk through what you find.</span></li>' +
+        '</ul></section>' +
+
+      GUIDES.map(function (g) {
+        return '<section id="learn-' + g.id + '" class="card mb-8 scroll-mt-32">' +
+          '<h2 class="font-term text-4xl text-neon glow-green m-0 mb-4">' + g.title.toUpperCase() + '</h2>' +
+          '<h3 class="label">What it is</h3><p class="text-neon/80 leading-relaxed mt-0 mb-5">' + g.what + '</p>' +
+          '<h3 class="label">Tools</h3><ul class="list-none p-0 m-0 mb-5 space-y-3">' + g.tools.map(function (t) {
+            return '<li class="bg-void border border-line p-3"><b class="text-amber">' + t[0] + '</b><span class="block text-sm text-neon/75 mt-1">' + t[1] + '</span></li>';
+          }).join('') + '</ul>' +
+          '<h3 class="label">Tip</h3><p class="text-neon/80 leading-relaxed m-0 border-l-2 border-alert pl-3">' + g.tip + '</p>' +
+        '</section>';
+      }).join('') +
+      '<div class="flex flex-col sm:flex-row gap-3"><a href="#/challenges" class="btn-red">Go to challenges</a>' +
+        (status.signed_in ? '' : '<a href="#/register" class="btn-green">Register</a>') + '</div>', 'max-w-4xl');
+
+    function jump(id) {
+      var el = document.getElementById('learn-' + id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    $$('[data-jump]', app).forEach(function (b) { b.addEventListener('click', function () { jump(b.getAttribute('data-jump')); }); });
+    if (sub) later(0, function () { jump(sub); }); // after the router's scroll-to-top
+  }
 
   // ------------------------------------------------------------------ #/scoreboard
   function viewScoreboard(stale) {
