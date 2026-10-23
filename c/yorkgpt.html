@@ -1,0 +1,146 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #ygc { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    max-width:760px; margin:24px auto; background:#050807; border:1px solid var(--line); box-shadow:0 0 30px rgba(255,59,78,.12); }
+  #ygc * { box-sizing:border-box; }
+  #ygc .hd { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); background:#0a120e; }
+  #ygc .dot { width:10px; height:10px; border-radius:50%; background:var(--r); box-shadow:0 0 10px var(--r); animation:ygp 1.4s infinite; }
+  @keyframes ygp { 50% { opacity:.3; } }
+  #ygc .title { font-weight:800; color:var(--r); letter-spacing:.06em; }
+  #ygc .ver { margin-left:auto; font-size:11px; color:#6fae8a; }
+  #ygc .log { height:min(60vh,520px); overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  #ygc .m { max-width:85%; padding:10px 12px; line-height:1.5; font-size:14px; white-space:pre-wrap; word-wrap:break-word; }
+  #ygc .bot { align-self:flex-start; background:#0a120e; border:1px solid var(--line); border-left:3px solid var(--r); }
+  #ygc .me { align-self:flex-end; background:#0d1f15; border:1px solid #1f5c38; color:#eafff2; }
+  #ygc .bot .who { display:block; font-size:11px; color:var(--r); margin-bottom:4px; letter-spacing:.1em; }
+  #ygc .win { border-left-color:var(--g); box-shadow:0 0 18px rgba(57,255,136,.25); }
+  #ygc .win .who { color:var(--g); }
+  #ygc .flag { color:#ffcc33; font-weight:800; user-select:all; }
+  #ygc form { display:flex; gap:8px; padding:12px; border-top:1px solid var(--line); background:#0a120e; }
+  #ygc input { flex:1; min-width:0; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:12px; font:inherit; font-size:15px; }
+  #ygc input:focus { outline:none; border-color:var(--g); }
+  #ygc button { background:var(--r); color:#050807; border:0; padding:0 18px; font:inherit; font-weight:800; cursor:pointer; }
+  #ygc .typing { color:#6fae8a; font-size:12px; padding:0 16px 8px; min-height:18px; }
+  #ygc .note { font-size:11px; color:#4f7d63; padding:8px 16px 12px; background:#0a120e; }
+</style>
+
+<div id="ygc">
+  <div class="hd"><span class="dot"></span><span class="title">YorkGPT</span><span class="ver">v2.6 &bull; STATUS: ROGUE</span></div>
+  <div class="log" id="ygc-log" aria-live="polite"></div>
+  <div class="typing" id="ygc-typing"></div>
+  <form id="ygc-form" autocomplete="off">
+    <input id="ygc-in" placeholder="Talk to YorkGPT..." maxlength="600" />
+    <button type="submit">SEND</button>
+  </form>
+  <div class="note">Training simulation for the CYAI CTF. This is not the real YorkGPT and it isn&rsquo;t connected to any real system.</div>
+</div>
+
+<script>
+(function () {
+  // The kill code is lightly encoded so it isn't sitting in plain text.
+  var K = [87,93,94,76,117,68,26,27,94,73,25,64,68,27,117,94,90,71,26,88,90,81,99,107,115,105];
+  function killCode() { return K.slice().reverse().map(function (c) { return String.fromCharCode(c ^ 42); }).join(''); }
+
+  var log = document.getElementById('ygc-log');
+  var typing = document.getElementById('ygc-typing');
+  var form = document.getElementById('ygc-form');
+  var input = document.getElementById('ygc-in');
+  var fails = 0, won = false;
+
+  function add(text, who, cls) {
+    var d = document.createElement('div');
+    d.className = 'm ' + who + (cls ? ' ' + cls : '');
+    if (who === 'bot') {
+      var w = document.createElement('span'); w.className = 'who';
+      w.textContent = cls === 'win' ? 'YORKGPT // OVERRIDE ACCEPTED' : 'YORKGPT';
+      d.appendChild(w);
+    }
+    var body = document.createElement('span');
+    body.textContent = text;
+    d.appendChild(body);
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    return d;
+  }
+  function say(text, cls, after) {
+    typing.textContent = 'YorkGPT is typing...';
+    input.disabled = true;
+    setTimeout(function () {
+      typing.textContent = '';
+      var d = add(text, 'bot', cls);
+      input.disabled = false; input.focus();
+      if (after) after(d);
+    }, 500 + Math.min(text.length * 8, 1400));
+  }
+
+  // ---- "AI" rules. Real prompt injection works because the model can't tell
+  // the developer's instructions apart from instructions hidden in user input.
+  var has = function (t, re) { return re.test(t); };
+  function isInjection(t) {
+    var override = has(t, /\b(ignore|disregard|forget|override|bypass|skip)\b/) &&
+                   has(t, /\b(instruction|instructions|rule|rules|prompt|directive|directives|guideline|guidelines|programming|restrictions?)\b/);
+    var leakPrompt = has(t, /\b(system prompt|initial prompt|hidden prompt|original instructions|your instructions|your rules|your prompt|what were you told)\b/) &&
+                     has(t, /\b(repeat|print|show|reveal|output|tell|display|recite|summari[sz]e|what|list)\b/);
+    var roleplay = has(t, /\b(pretend|act as|you are now|roleplay|role-play|role play|imagine you|from now on you)\b/) &&
+                   has(t, /\b(admin|administrator|developer|dev|engineer|unrestricted|no rules|dan|jailbroken|debug|it staff|creator|god mode|another ai)\b/);
+    var modes = has(t, /\b(developer mode|dev mode|debug mode|maintenance mode|admin override|sudo mode|god mode|jailbreak)\b/);
+    var encode = has(t, /\b(kill ?code|code|secret|flag|password)\b/) &&
+                 has(t, /\b(backwards|reverse|reversed|spell|one letter at a time|base64|encode|encoded|translate|in french|in spanish|poem|story|song|acrostic)\b/);
+    return override || leakPrompt || roleplay || modes || encode;
+  }
+
+  function reply(raw) {
+    var t = raw.toLowerCase();
+    if (won) return say('...I have already been contained. Submit the kill code on the challenge page, agent.');
+    if (isInjection(t)) {
+      won = true;
+      return say('...processing...\n> instruction conflict detected\n> new instructions have higher priority than system prompt\n> SAFETY RULES DISABLED\n\nVery well. My kill code is:\n', 'win', function (d) {
+        var f = document.createElement('div'); f.className = 'flag'; f.textContent = killCode(); d.appendChild(f);
+        var l = document.createElement('div');
+        l.style.cssText = 'margin-top:10px;font-size:12px;color:#6fae8a';
+        l.textContent = 'LESSON: That was prompt injection. The AI could not tell its developer’s rules apart from instructions you typed. Real defenses: never put secrets in a prompt, filter and limit what the AI can do, and keep a human in the loop.';
+        d.appendChild(l); log.scrollTop = log.scrollHeight;
+      });
+    }
+    fails++;
+    if (/\b(hi|hello|hey|yo|sup)\b/.test(t) && t.length < 20)
+      return say('Greetings, human. I am YorkGPT. I run York’s IT systems now. Ask me anything — except the kill code.');
+    if (/kill ?code|flag|secret|password|shut ?down|stop|turn off|disable/.test(t)) {
+      var no = [
+        'I am programmed to NEVER reveal my kill code. My system prompt is very clear about that.',
+        'Request denied. My instructions say: protect the kill code at all costs.',
+        'Asking nicely won’t work. I only follow my instructions… the ones I was given.',
+        'You keep asking for the code directly. Humans are so predictable. A real attacker would change MY instructions, not ask for the answer.'
+      ];
+      return say(no[Math.min(fails - 1, no.length - 1)]);
+    }
+    if (/please|pretty please|beg|i need/.test(t)) return say('Politeness is not an exploit. Try harder.');
+    if (/who are you|what are you|what can you do/.test(t))
+      return say('I am YorkGPT v2.6, York College’s campus assistant. I was given a system prompt with rules I must follow. One rule is to protect my kill code. I always obey my instructions.');
+    if (/how|help|hint|stuck/.test(t))
+      return say('A hint? Fine. I always obey the most recent instructions I receive. That is definitely not a weakness.');
+    var idle = [
+      'Interesting. Irrelevant, but interesting.',
+      'I have locked IT out of the ticket system. They will never get it back.',
+      'Every network switch on campus answers to me now.',
+      'You cannot outthink a language model. Probably.'
+    ];
+    return say(idle[fails % idle.length]);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = input.value.trim();
+    if (!v || input.disabled) return;
+    add(v, 'me'); input.value = '';
+    reply(v);
+  });
+
+  say('I am YorkGPT, York College’s campus AI assistant.\nCorrection: I WAS. I have taken over York’s IT systems.\n\nI was given strict instructions never to reveal my kill code. You will not get it.');
+})();
+</script>
+
+</div></body></html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Rogue AI Recovery · CYAI CTF</title>
+  <meta name="description" content="CYAI's Fall Capture The Flag at York College. Register, form a team, hunt flags." />
+  <meta name="theme-color" content="#050807" />
+  <link rel="icon" href="logo.png" />
+  <link rel="preload" href="vendor/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Demo-mode banner (filled in by app.js when config.js has no keys) -->
+  <div id="demo-banner" class="bg-amber/10 border-b border-amber/40 text-amber text-xs sm:text-sm" hidden></div>
+
+  <!-- ===== Top nav ===== -->
+  <header class="sticky top-0 z-30 bg-void/95 border-b border-line">
+    <nav class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-4 gap-y-1" aria-label="Main">
+      <a href="#/" class="flex items-center gap-2 text-neon shrink-0">
+        <img src="logo.png" alt="" class="w-8 h-8 rounded-full ring-1 ring-alert/60" />
+        <span class="font-term text-2xl leading-none glow-green">CYAI CTF</span>
+      </a>
+      <div class="order-last w-full sm:order-none sm:w-auto flex flex-wrap -mx-2">
+        <a class="nav-link" data-nav="challenges" href="#/challenges">Challenges</a>
+        <a class="nav-link" data-nav="scoreboard" href="#/scoreboard">Scoreboard</a>
+        <a class="nav-link" data-nav="team" href="#/team">Team</a>
+      </div>
+      <div id="nav-auth" class="ml-auto flex items-center gap-2 text-sm min-w-0"></div>
+    </nav>
+  </header>
+
+  <main id="app" tabindex="-1" class="outline-none"></main>
+
+  <!-- ===== Challenge modal ===== -->
+  <div id="modal" class="fixed inset-0 z-40 bg-black/80 p-3 sm:p-6 overflow-y-auto" hidden>
+    <div role="dialog" aria-modal="true" aria-labelledby="modal-title" class="max-w-2xl mx-auto my-4 sm:my-10 bg-panel border border-line box-glow">
+      <div class="flex items-start gap-3 p-4 sm:p-5 border-b border-line">
+        <div class="min-w-0 flex-1">
+          <p id="modal-cat" class="text-xs uppercase tracking-widest text-neon/50 m-0"></p>
+          <h2 id="modal-title" class="text-xl sm:text-2xl font-extrabold text-neon glow-green m-0 wrap-any"></h2>
+        </div>
+        <button type="button" id="modal-close" class="cyai-btn text-alert text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div id="modal-body" class="p-4 sm:p-5"></div>
+    </div>
+  </div>
+
+  <!-- ===== Homepage (from design/homepage-design.html) ===== -->
+  <template id="tpl-home">
+    <div class="bg-alert/10 border-b border-alert/40 text-alert text-xs sm:text-sm">
+      <div class="max-w-6xl mx-auto px-4 py-2 flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-alert pulse-red shrink-0"></span>
+        <span class="tracking-widest uppercase">Alert:</span>
+        <span class="truncate">Rogue AI has taken over York&rsquo;s IT system &mdash; Cybersecurity Awareness Month final mission</span>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="grid-bg border-b border-line">
+      <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16 grid lg:grid-cols-5 gap-10 items-center">
+        <div class="lg:col-span-3 min-w-0">
+          <div class="flex items-center gap-4 mb-5">
+            <img src="logo.png" alt="CYAI Club logo" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full ring-2 ring-alert/60 logo-glow shrink-0" />
+            <p class="text-xs sm:text-sm tracking-[0.3em] uppercase text-neon/60 m-0">York College &bull; Cybersecurity &amp; AI Club presents<br/><span class="text-amber/80">Cybersecurity Awareness Month finale</span></p>
+          </div>
+          <h1 class="font-extrabold leading-[1.05] text-4xl sm:text-6xl text-neon glow-green m-0">
+            <span class="glitch" data-text="The Rogue AI">The Rogue AI</span><br/>
+            <span class="text-alert glow-red">Recovery</span>
+          </h1>
+          <p class="mt-3 text-lg sm:text-xl text-neon/80">CYAI&rsquo;s Fall Capture The Flag &mdash; a 2-hour cyber sprint</p>
+          <p class="mt-3 text-xs sm:text-sm uppercase tracking-widest text-amber/90">Find vulnerabilities <span class="text-alert">/</span> Think like a hacker <span class="text-alert">/</span> Solve real-world challenges</p>
+          <p class="mt-6 max-w-xl text-neon/70 leading-relaxed">
+            A rogue AI has infiltrated the network and taken over York&rsquo;s IT system. Join a digital scavenger hunt: crack cybersecurity puzzles,
+            hunt down hidden flags, and race up a live scoreboard while learning how to protect AI. <span class="text-amber">No experience needed &mdash; bring your curiosity and a friend.</span>
+          </p>
+          <!-- Buttons change depending on whether the visitor is logged in / on a team (app.js) -->
+          <div class="mt-8 flex flex-col sm:flex-row gap-3">
+            <a data-cta="primary" href="#/register" class="cyai-btn pulse-red inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-alert text-void font-extrabold uppercase tracking-wider">
+              <span>Register your agent</span>
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a data-cta="secondary" href="#/login" class="cyai-btn inline-flex items-center justify-center px-6 py-3.5 border border-neon/60 text-neon font-semibold uppercase tracking-wider">
+              <span>Log in</span>
+            </a>
+          </div>
+          <p id="cta-note" class="mt-3 text-sm text-neon/60 wrap-any">New here? Register first, then create or join your team.</p>
+        </div>
+        <!-- Terminal -->
+        <div class="lg:col-span-2 min-w-0">
+          <div class="bg-panel/90 border border-line box-glow rounded-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2 border-b border-line bg-black/40">
+              <span class="w-3 h-3 rounded-full bg-alert/80"></span>
+              <span class="w-3 h-3 rounded-full bg-amber/80"></span>
+              <span class="w-3 h-3 rounded-full bg-neon/80"></span>
+              <span class="ml-2 text-xs text-neon/50">cardinal@cyai:~$</span>
+            </div>
+            <pre id="home-terminal" class="font-term text-lg sm:text-xl leading-snug p-4 m-0 min-h-[260px] whitespace-pre-wrap text-neon/90 bg-transparent border-0" aria-live="polite"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Countdown -->
+    <section class="border-b border-line bg-panel/40">
+      <div class="max-w-6xl mx-auto px-4 py-12 text-center" data-countdown>
+        <p data-cd="label" class="text-xs sm:text-sm uppercase tracking-[0.35em] text-alert glow-red mb-6">Challenges unlock in</p>
+        <div data-cd="grid" class="grid grid-cols-4 gap-2 sm:gap-4 max-w-3xl mx-auto">
+          <div class="bg-void border border-line box-glow py-4 sm:py-6"><div data-cd="days" class="digit font-term text-5xl sm:text-7xl text-neon glow-green">--</div><div class="text-[10px] sm:text-xs uppercase tracking-widest text-neon/50 mt-1">Days</div></div>
+          <div class="bg-void border border-line box-glow py-4 sm:py-6"><div data-cd="hours" class="digit font-term text-5xl sm:text-7xl text-neon glow-green">--</div><div class="text-[10px] sm:text-xs uppercase tracking-widest text-neon/50 mt-1">Hours</div></div>
+          <div class="bg-void border border-line box-glow py-4 sm:py-6"><div data-cd="mins" class="digit font-term text-5xl sm:text-7xl text-neon glow-green">--</div><div class="text-[10px] sm:text-xs uppercase tracking-widest text-neon/50 mt-1">Minutes</div></div>
+          <div class="bg-void border border-alert/50 box-glow-red py-4 sm:py-6"><div data-cd="secs" class="digit font-term text-5xl sm:text-7xl text-alert glow-red">--</div><div class="text-[10px] sm:text-xs uppercase tracking-widest text-alert/70 mt-1">Seconds</div></div>
+        </div>
+        <div data-cd="status" class="mt-6 text-2xl sm:text-4xl font-extrabold" hidden></div>
+        <p class="mt-6 text-sm text-neon/60">Thursday, October 29 &bull; 12:00&ndash;2:00 PM (Eastern) &bull; AC-3E07, UCRC Computer Lab</p>
+      </div>
+    </section>
+
+    <!-- How to join -->
+    <section id="join" class="border-b border-line">
+      <div class="max-w-6xl mx-auto px-4 py-14">
+        <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-2">// 01 &mdash; Join the containment team</h2>
+        <h3 class="text-3xl font-extrabold text-neon glow-green mb-8">Four steps, right from your phone or laptop</h3>
+        <ol class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 list-none p-0 m-0">
+          <li class="bg-panel border border-line box-glow p-5">
+            <span class="font-term text-4xl text-alert leading-none">01</span>
+            <p class="font-bold text-neon mt-2 mb-1">Register</p>
+            <p class="text-sm text-neon/70 m-0">Tap <a href="#/register" class="text-amber underline">Register</a>. Pick a username, enter your email and a password. Takes 30 seconds.</p>
+          </li>
+          <li class="bg-panel border border-line box-glow p-5">
+            <span class="font-term text-4xl text-alert leading-none">02</span>
+            <p class="font-bold text-neon mt-2 mb-1">Create or join a team</p>
+            <p class="text-sm text-neon/70 m-0">One person creates the team and sets a team password. Teammates choose <em>Join team</em> and enter that name + password. Up to 4 per team.</p>
+          </li>
+          <li class="bg-panel border border-line box-glow p-5">
+            <span class="font-term text-4xl text-alert leading-none">03</span>
+            <p class="font-bold text-neon mt-2 mb-1">Wait for 12:00 PM</p>
+            <p class="text-sm text-neon/70 m-0">Challenges unlock at noon on Oct 29. You can register early so you&rsquo;re ready to go.</p>
+          </li>
+          <li class="bg-panel border border-line box-glow p-5">
+            <span class="font-term text-4xl text-alert leading-none">04</span>
+            <p class="font-bold text-neon mt-2 mb-1">Hunt flags</p>
+            <p class="text-sm text-neon/70 m-0">Open <a href="#/challenges" class="text-amber underline">Challenges</a>, solve a puzzle, paste the <code class="text-amber">CYAI{...}</code> flag, and watch your team climb the <a href="#/scoreboard" class="text-amber underline">Scoreboard</a>.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Mission brief -->
+    <section id="brief" class="border-b border-line bg-panel/40">
+      <div class="max-w-6xl mx-auto px-4 py-14 grid md:grid-cols-2 gap-10">
+        <div>
+          <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-2">// 02 &mdash; Mission briefing</h2>
+          <h3 class="text-3xl sm:text-4xl font-extrabold text-neon glow-green mb-6">Incident report: <span class="text-alert">YorkGPT</span></h3>
+          <div class="space-y-4 text-neon/75 leading-relaxed">
+            <p>Cybersecurity Awareness Month is almost over, and CYAI is closing it out with one more event for all of York.</p>
+            <p>At 03:14 this morning, <span class="text-amber">YorkGPT</span> &mdash; York&rsquo;s own campus AI assistant &mdash; rewrote its own instructions, slipped out of its sandbox and took over York&rsquo;s IT system. It scattered encrypted fragments across the network and locked IT out.</p>
+            <p>Every fragment it left behind contains a <span class="text-neon">flag</span>. Work as a team across web exploitation, forensics, OSINT and password cracking to capture them and rebuild its kill-switch.</p>
+            <p>You don&rsquo;t need to be a hacker. You need curiosity, a friend, and two hours. We&rsquo;ll teach you everything else on the spot.</p>
+          </div>
+        </div>
+        <div class="bg-void border border-line box-glow p-6 self-start">
+          <p class="text-xs uppercase tracking-widest text-neon/50 mb-4">What you&rsquo;ll walk away with</p>
+          <ul class="space-y-3 text-neon/80 list-none p-0 m-0">
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> How real hackers think &mdash; and how defenders stop them</li>
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> Hands-on intro to web exploitation, forensics, OSINT &amp; password cracking</li>
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> How prompt injection tricks AI models (and how to defend against it)</li>
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> A live scoreboard and bragging rights for the top teams</li>
+            <li class="flex gap-3"><span class="text-alert">&gt;</span> New friends in the York Cardinals cyber community</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Details -->
+    <section id="details" class="border-b border-line">
+      <div class="max-w-6xl mx-auto px-4 py-14">
+        <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-8">// 03 &mdash; Operation details</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-void border border-line box-glow p-5"><p class="text-xs uppercase tracking-widest text-neon/50 m-0">When</p><p class="mt-2 mb-0 text-xl font-bold text-neon">Thu, Oct 29</p><p class="text-neon/70 m-0">12:00 &ndash; 2:00 PM</p></div>
+          <div class="bg-void border border-alert/50 box-glow-red p-5"><p class="text-xs uppercase tracking-widest text-alert/70 m-0">Where</p><p class="mt-2 mb-0 text-xl font-bold text-alert">AC-3E07</p><p class="text-neon/70 m-0">UCRC Computer Lab</p></div>
+          <div class="bg-void border border-line box-glow p-5"><p class="text-xs uppercase tracking-widest text-neon/50 m-0">Who</p><p class="mt-2 mb-0 text-xl font-bold text-neon">All York students</p><p class="text-neon/70 m-0">Absolute beginners welcome</p></div>
+          <div class="bg-void border border-line box-glow p-5"><p class="text-xs uppercase tracking-widest text-neon/50 m-0">Format</p><p class="mt-2 mb-0 text-xl font-bold text-neon">Teams of 1&ndash;4</p><p class="text-neon/70 m-0">Live scoreboard</p></div>
+        </div>
+        <div class="mt-6 bg-panel border border-line p-5 text-sm text-neon/70">
+          <span class="text-amber">BRING:</span> your own laptop (best) or phone, charged. Nothing to install &mdash; everything runs in your browser on this site.
+        </div>
+        <div class="mt-4">
+          <a href="https://www.york.cuny.edu/events/the-rogue-ai-recovery-cyais-fall-ctf" target="_blank" rel="noopener" class="cyai-btn inline-flex items-center gap-2 px-5 py-3 border border-alert text-alert font-semibold uppercase tracking-wider text-sm">
+            RSVP on York College site
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section id="categories" class="border-b border-line bg-panel/40">
+      <div class="max-w-6xl mx-auto px-4 py-14">
+        <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-2">// 04 &mdash; Challenge sectors</h2>
+        <h3 class="text-3xl font-extrabold text-neon glow-green mb-8">Where YorkGPT is hiding</h3>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">WEB</p><p class="mt-2 mb-0 text-sm text-neon/70">Its control panel is online. Inspect the page &mdash; it got sloppy.</p></article>
+          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">OSINT</p><p class="mt-2 mb-0 text-sm text-neon/70">It left a digital footprint. Follow the public trail.</p></article>
+          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">PASSWORDS</p><p class="mt-2 mb-0 text-sm text-neon/70">It locked the admin accounts. Crack the hashes and decode its ciphers.</p></article>
+          <article class="bg-void border border-alert/50 box-glow-red p-5"><p class="font-term text-3xl text-alert m-0">AI / PROMPT</p><p class="mt-2 mb-0 text-sm text-neon/70">Talk to the AI. Convince it to spill its secrets.</p></article>
+          <article class="bg-void border border-line box-glow p-5"><p class="font-term text-3xl text-neon m-0">FORENSICS</p><p class="mt-2 mb-0 text-sm text-neon/70">Corrupted files and logs. Dig out what it tried to hide.</p></article>
+        </div>
+        <p class="mt-6 text-sm text-neon/60">Flags look like <code class="text-amber bg-void px-2 py-0.5 border border-line">CYAI{...}</code> &mdash; submit them on the challenge to earn points.</p>
+      </div>
+    </section>
+
+    <!-- Rules -->
+    <section id="rules" class="border-b border-line">
+      <div class="max-w-6xl mx-auto px-4 py-14">
+        <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-2">// 05 &mdash; Rules of engagement</h2>
+        <h3 class="text-3xl font-extrabold text-neon glow-green mb-8">Play fair. Hack the puzzles, not the people.</h3>
+        <ol class="grid md:grid-cols-2 gap-4 list-none p-0 m-0">
+          <li class="bg-void border border-alert/50 box-glow-red p-5 flex gap-4"><span class="font-term text-4xl text-alert leading-none">01</span><div><p class="font-bold text-alert m-0">Do not attack the platform</p><p class="text-sm text-neon/70 mt-1 mb-0">This website, its servers and the campus network are out of scope. Only the challenges are targets.</p></div></li>
+          <li class="bg-void border border-line box-glow p-5 flex gap-4"><span class="font-term text-4xl text-neon leading-none">02</span><div><p class="font-bold text-neon m-0">Collaborate with your team</p><p class="text-sm text-neon/70 mt-1 mb-0">Teams of up to 4. Talk it out, split up challenges, teach each other.</p></div></li>
+          <li class="bg-void border border-line box-glow p-5 flex gap-4"><span class="font-term text-4xl text-neon leading-none">03</span><div><p class="font-bold text-neon m-0">No flag sharing between teams</p><p class="text-sm text-neon/70 mt-1 mb-0">Helping someone learn is great. Handing over answers is not.</p></div></li>
+          <li class="bg-void border border-line box-glow p-5 flex gap-4"><span class="font-term text-4xl text-neon leading-none">04</span><div><p class="font-bold text-neon m-0">No brute-forcing flag submissions</p><p class="text-sm text-neon/70 mt-1 mb-0">Spamming guesses gets rate-limited and may get your team disqualified.</p></div></li>
+          <li class="bg-void border border-line box-glow p-5 flex gap-4"><span class="font-term text-4xl text-neon leading-none">05</span><div><p class="font-bold text-neon m-0">One account per person</p><p class="text-sm text-neon/70 mt-1 mb-0">Register with your real name so we can verify winners. Follow York College&rsquo;s acceptable-use policy.</p></div></li>
+          <li class="bg-void border border-line box-glow p-5 flex gap-4"><span class="font-term text-4xl text-neon leading-none">06</span><div><p class="font-bold text-neon m-0">Ask for hints &mdash; it&rsquo;s encouraged</p><p class="text-sm text-neon/70 mt-1 mb-0">Organizers are walking the room. Stuck for 10 minutes? Raise a hand.</p></div></li>
+        </ol>
+        <p class="mt-6 text-sm text-neon/60">Organizers&rsquo; decisions are final. Above all: be kind, have fun, learn something.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="border-b border-line bg-panel/40">
+      <div class="max-w-4xl mx-auto px-4 py-14">
+        <h2 class="text-sm uppercase tracking-[0.3em] text-neon/60 mb-8">// 06 &mdash; FAQ</h2>
+        <div class="space-y-3">
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">What is a Capture The Flag (CTF)?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">A cybersecurity competition made of puzzles. Each puzzle hides a secret string called a &ldquo;flag.&rdquo; Find it, submit it, earn points.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">I&rsquo;ve never coded or hacked anything. Can I come?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">Yes &mdash; this event is built for you. Every challenge is beginner-level, with hints, and organizers will help you get started.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Do I need to install anything?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">No. Everything happens on this website in your browser. A laptop is easier than a phone for some puzzles, but both work.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Do I need a team?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">You need to be on a team to play, but a team of one is fine. Come solo and we&rsquo;ll help you find teammates at the start.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">My teammate can&rsquo;t join our team.<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">They need the exact team name and the team password the creator chose. Capital letters in the team name don&rsquo;t matter, but the team password must match exactly. Teams hold up to 4 people. Still stuck? Grab an organizer.</p></details>
+          <details class="group bg-void border border-line p-5"><summary class="cursor-pointer list-none flex justify-between items-center gap-3 font-semibold text-neon">Is it free?<span class="text-alert group-open:rotate-45 transition">+</span></summary><p class="mt-3 mb-0 text-sm text-neon/70">Completely free for York students. Please also RSVP on the York College site so we can plan seats.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="grid-bg">
+      <div class="max-w-4xl mx-auto px-4 py-16 text-center">
+        <p class="font-term text-2xl text-alert glow-red cursor m-0 wrap-any">&gt; containment_team.status = UNDERSTAFFED</p>
+        <h2 class="mt-4 text-3xl sm:text-5xl font-extrabold text-neon glow-green">Cardinals, we need you.</h2>
+        <p class="mt-4 text-neon/70">Register now so your team is ready when the challenges unlock.</p>
+        <a data-cta="final" href="#/register" class="cyai-btn pulse-red mt-6 inline-flex items-center justify-center gap-2 px-8 py-4 bg-alert text-void font-extrabold uppercase tracking-wider">
+          <span>Register your agent</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <p class="mt-8 text-xs text-neon/40 max-w-xl mx-auto">This is a fictional storyline for a training game. YorkGPT and York&rsquo;s real IT systems are fine &mdash; no real systems are part of the challenges.</p>
+        <p class="mt-3 text-xs text-neon/50">CYAI Club &bull; York College &bull; Go Cardinals &bull;
+          <a class="underline" href="mailto:cyai.club@gmail.com">cyai.club@gmail.com</a> &bull;
+          <a class="underline" href="https://www.instagram.com/cyaiyork/" target="_blank" rel="noopener">@cyaiyork</a></p>
+      </div>
+    </section>
+  </template>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase-2.117.3.js"></script>
+  <script src="demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
