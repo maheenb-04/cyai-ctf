@@ -2,11 +2,7 @@
 
 CYAI's fall Capture The Flag at York College.
 
-Play here:
-- https://cyaictf.netlify.app/
-- https://maheenb-04.github.io/cyai-ctf/
-
-Both links are the same site with the same accounts and scoreboard. Pick one and stick with it, because your login won't carry over to the other.
+Play here: https://cyaictf.netlify.app/
 
 <a href="https://cyaictf.netlify.app/"><img src=".github/preview-desktop.png" alt="Homepage on a laptop" width="74%"></a>
 <a href="https://cyaictf.netlify.app/"><img src=".github/preview-phone.png" alt="Homepage on a phone" width="22%"></a>
