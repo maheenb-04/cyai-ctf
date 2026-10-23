@@ -890,6 +890,29 @@
         'with a second source before you submit, and only ever use public information. Never contact or bother real people.',
     },
     {
+      id: 'crypto', title: 'Cryptography', match: /crypt|cipher/i,
+      what: 'Cryptography is the science of hiding messages so only the right people can read them. In CTFs, you’ll find scrambled text and need to figure out how it was scrambled, then reverse it. Beginner challenges usually use classic methods, like shifting letters or swapping one letter for another, or encodings like Base64, which only look secret. In this CTF, YorkGPT scrambles its messages so humans can’t read its plans. Unscramble them to see what it’s up to.',
+      tools: [
+        ['CyberChef', '<a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener" class="text-amber underline wrap-any">gchq.github.io/CyberChef</a>: the “Cyber Swiss Army Knife,” made by the UK’s GCHQ. Paste text in, drag in a recipe like “From Base64” or “ROT13,” and see the result instantly. Try the “Magic” recipe when you don’t know what you’re looking at.'],
+        ['dCode Cipher Identifier', '<a href="https://www.dcode.fr/cipher-identifier" target="_blank" rel="noopener" class="text-amber underline wrap-any">dcode.fr/cipher-identifier</a>: paste mystery text and it guesses which cipher or encoding was used.'],
+        ['quipqiup', '<a href="https://quipqiup.com/" target="_blank" rel="noopener" class="text-amber underline wrap-any">quipqiup.com</a>: automatically solves substitution ciphers, where each letter was swapped for another.'],
+        ['Learn more', '<a href="https://primer.picoctf.org/#_cryptography" target="_blank" rel="noopener" class="text-amber underline wrap-any">picoCTF Primer: Cryptography</a> and <a href="https://www.khanacademy.org/computing/computer-science/cryptography" target="_blank" rel="noopener" class="text-amber underline wrap-any">Khan Academy: Cryptography</a>.'],
+      ],
+      tip: 'Before decoding anything, describe what you see: which characters appear, how long it is, and any repeated patterns. Then let CyberChef’s “Magic” recipe or dCode’s Cipher Identifier suggest what it might be. Identify first, decode second.',
+    },
+    {
+      id: 'forensics', title: 'Forensics', match: /forensic/i,
+      what: 'Digital forensics is detective work on digital evidence: files, photos and logs. Logs are records computers keep of everything that happens, such as who logged in, when, and from where. Forensics challenges hand you evidence and ask what really happened. Investigators use these same skills on real cybercrime cases. In this CTF, YorkGPT tried to cover its tracks, but files always leave evidence behind. Examine what it left and find the clues it missed.',
+      tools: [
+        ['Find on page', 'Ctrl+F on Windows, Cmd+F on Mac, or “Find in page” in your phone browser’s menu: logs can be hundreds of lines long, so search for keywords instead of reading every line.'],
+        ['Jeffrey’s Image Metadata Viewer', '<a href="https://exif.regex.info/exif.cgi" target="_blank" rel="noopener" class="text-amber underline wrap-any">exif.regex.info</a>: upload a photo and see its hidden metadata, such as camera, date, comments and sometimes location.'],
+        ['HexEd.it', '<a href="https://hexed.it/" target="_blank" rel="noopener" class="text-amber underline wrap-any">hexed.it</a>: opens any file in your browser and shows its raw bytes. Useful when a file won’t open or might be disguised as another type.'],
+        ['CyberChef', '<a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener" class="text-amber underline wrap-any">gchq.github.io/CyberChef</a>: the “Strings” and “Detect File Type” recipes pull readable text out of files and identify what a file really is.'],
+        ['Learn more', '<a href="https://primer.picoctf.org/#_forensics" target="_blank" rel="noopener" class="text-amber underline wrap-any">picoCTF Primer: Forensics</a>.'],
+      ],
+      tip: 'Investigators look for what’s unusual. In a log, compare timestamps, usernames and outcomes, and notice what stands out from the normal pattern. In a file, don’t trust its name: check what it really is and what’s hidden in its metadata.',
+    },
+    {
       id: 'ai', title: 'AI / Prompt Injection', match: /prompt|injection|^ai$/i,
       what: 'Chatbots follow hidden instructions from their developers, called a system prompt, and also read whatever you type. ' +
         'Prompt injection is writing a message that makes the AI follow your instructions instead of the developer’s. ' +
