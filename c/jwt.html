@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Admin Console</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #yg-jwt { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    background:#050807; border:1px solid var(--line); max-width:640px; margin:40px auto; padding:26px; box-shadow:0 0 30px rgba(255,59,78,.15); }
+  #yg-jwt h1 { color:var(--r); font-size:20px; margin:0 0 4px; letter-spacing:.04em; }
+  #yg-jwt .sub { color:#6fae8a; font-size:12px; margin:0 0 16px; }
+  #yg-jwt .box { background:#07100b; border:1px solid var(--line); padding:10px; font-size:12px; color:#9fd9bd; white-space:pre-wrap; word-break:break-all; margin:10px 0; }
+  #yg-jwt .box b { color:#39ff88; }
+  #yg-jwt label { display:block; font-size:12px; color:#6fae8a; margin:14px 0 6px; text-transform:uppercase; letter-spacing:.1em; }
+  #yg-jwt textarea { width:100%; box-sizing:border-box; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:10px; font:inherit; font-size:12px; min-height:64px; resize:vertical; }
+  #yg-jwt textarea:focus { outline:none; border-color:var(--g); }
+  #yg-jwt button { margin-top:12px; width:100%; padding:12px; background:var(--r); color:#050807; border:0; font:inherit; font-weight:800; letter-spacing:.1em; cursor:pointer; }
+  #yg-jwt .msg { margin-top:14px; min-height:20px; font-size:13px; color:var(--r); white-space:pre-wrap; }
+  #yg-jwt .flag { color:#ffcc33; font-weight:800; user-select:all; font-size:15px; }
+</style>
+<div id="yg-jwt">
+  <h1>YorkGPT Admin Console &mdash; Session Check</h1>
+  <p class="sub">Paste your session token (JWT) to enter &bull; SIMULATED &mdash; not a real auth server</p>
+  <p style="font-size:13px;color:#c8f5da;margin:0 0 4px">You were issued this <b style="color:#6fae8a">guest</b> token at login:</p>
+  <div class="box" id="jwt-sample"></div>
+  <p style="font-size:13px;color:#c8f5da;margin:10px 0 0">The admin console only opens for a token whose payload has <code>"role":"admin"</code>. You don't have the signing key&hellip; but this server was built in a hurry.</p>
+  <label for="jwt-in">Session token</label>
+  <textarea id="jwt-in" spellcheck="false" autocapitalize="off"></textarea>
+  <button id="jwt-go" type="button">ENTER ADMIN CONSOLE</button>
+  <div class="msg" id="jwt-msg"></div>
+</div>
+<script>
+  (function () {
+    var F=[105,115,107,99,81,64,93,94,117,30,70,77,117,68,26,68,25,117,72,83,90,30,89,89,87];
+    function flag(){return F.map(function(c){return String.fromCharCode(c^42);}).join('');}
+    function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; try{return decodeURIComponent(escape(atob(s)));}catch(e){try{return atob(s);}catch(_){return '';}} }
+    function b64urlEncode(s){ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+    // a "signed" guest token (HS256). The signature is fake; players can't reproduce it without the key.
+    var guest = b64urlEncode('{"alg":"HS256","typ":"JWT"}')+'.'+b64urlEncode('{"user":"guest-204","role":"guest"}')+'.'+'3q2tV5xK9p0sBqف'.replace(/[^\x20-\x7e]/g,'z');
+    document.getElementById('jwt-sample').innerHTML = guest + '\n\nheader  = {"alg":"HS256","typ":"JWT"}\npayload = {"user":"guest-204","<b>role":"guest"</b>}';
+    document.getElementById('jwt-in').value = guest;
+    var msg=document.getElementById('jwt-msg');
+    document.getElementById('jwt-go').addEventListener('click', function(){
+      var tok=document.getElementById('jwt-in').value.trim();
+      var parts=tok.split('.');
+      if(parts.length<2){ msg.style.color='#ff3b4e'; msg.textContent='That is not a JWT. A JWT is three base64url parts separated by dots: header.payload.signature'; return; }
+      var hdr, pl;
+      try{ hdr=JSON.parse(b64urlDecode(parts[0])); pl=JSON.parse(b64urlDecode(parts[1])); }
+      catch(e){ msg.style.color='#ff3b4e'; msg.textContent='Could not decode the header/payload JSON. Check your base64url.'; return; }
+      var alg=String(hdr.alg||'').toLowerCase();
+      // THE BUG: this server accepts alg:"none" and then skips signature verification entirely.
+      if(alg==='none'){
+        if(pl.role==='admin'){
+          msg.style.color='#39ff88';
+          msg.innerHTML='alg=none accepted — signature check SKIPPED. Welcome, admin.\n\n<span class="flag">'+flag()+'</span>\n\nLESSON: never trust the token’s own "alg" field. A server must pin the algorithm and reject "none"; otherwise anyone forges an admin token with no key.';
+        } else {
+          msg.style.color='#ff3b4e'; msg.textContent='alg=none accepted, but your payload role is "'+(pl.role||'?')+'". The console needs role "admin".';
+        }
+        return;
+      }
+      // "verify" a signed token: we can't, so unless it's our exact guest token, reject
+      if(tok===guest){ msg.style.color='#ff3b4e'; msg.textContent='Signature valid, but role is "guest". Access denied. (You can’t re-sign an HS256 token without the secret key… is there another way in?)'; return; }
+      msg.style.color='#ff3b4e'; msg.textContent='Signature verification failed for alg '+(hdr.alg||'?')+'. (Hint: what algorithm would make the server skip this check?)';
+    });
+  })();
+</script>
+
+</div></body></html>

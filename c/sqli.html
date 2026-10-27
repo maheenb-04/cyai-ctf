@@ -1,0 +1,60 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Grade Database</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #yg-sqli { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    background:#050807; border:1px solid var(--line); max-width:600px; margin:40px auto; padding:26px; box-shadow:0 0 30px rgba(255,59,78,.15); }
+  #yg-sqli h1 { color:var(--r); font-size:20px; margin:0 0 4px; letter-spacing:.04em; }
+  #yg-sqli .sub { color:#6fae8a; font-size:12px; margin:0 0 18px; }
+  #yg-sqli label { display:block; font-size:12px; color:#6fae8a; margin:12px 0 6px; text-transform:uppercase; letter-spacing:.1em; }
+  #yg-sqli input { width:100%; box-sizing:border-box; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:10px; font:inherit; }
+  #yg-sqli input:focus { outline:none; border-color:var(--g); }
+  #yg-sqli button { margin-top:16px; width:100%; padding:12px; background:var(--r); color:#050807; border:0; font:inherit; font-weight:800; letter-spacing:.1em; cursor:pointer; }
+  #yg-sqli .q { margin-top:16px; background:#07100b; border:1px solid var(--line); border-left:3px solid #6fae8a; padding:10px; font-size:12px; color:#9fd9bd; white-space:pre-wrap; word-break:break-all; }
+  #yg-sqli .msg { margin-top:14px; min-height:20px; font-size:13px; color:var(--r); white-space:pre-wrap; }
+  #yg-sqli .flag { color:#ffcc33; font-weight:800; user-select:all; font-size:15px; }
+</style>
+<div id="yg-sqli">
+  <h1>YorkGPT Grade Database &mdash; Staff Login</h1>
+  <p class="sub">Internal use only &bull; SIMULATED &mdash; not a real database</p>
+  <form id="sq-form" autocomplete="off">
+    <label for="sq-user">Username</label>
+    <input id="sq-user" placeholder="staff id" autocapitalize="off" spellcheck="false">
+    <label for="sq-pass">Password</label>
+    <input id="sq-pass" placeholder="password" autocapitalize="off" spellcheck="false">
+    <button type="submit">LOG IN</button>
+  </form>
+  <div class="q" id="sq-query">query: SELECT * FROM users WHERE user='' AND pass=''</div>
+  <div class="msg" id="sq-msg"></div>
+</div>
+<script>
+  (function () {
+    var F=[105,115,107,99,81,89,91,70,117,27,68,64,25,73,94,27,26,68,117,72,83,90,30,89,89,87];
+    function flag(){return F.map(function(c){return String.fromCharCode(c^42);}).join('');}
+    var form=document.getElementById('sq-form'), msg=document.getElementById('sq-msg'), q=document.getElementById('sq-query');
+    var tries=0;
+    // a real parameterized query would treat input as data; this one concatenates it, so input can change the logic.
+    function isBypass(s){
+      var t=s.toLowerCase().replace(/\s+/g,' ');
+      return /'\s*or\s*'?1'?\s*=\s*'?1/.test(t) || /'\s*or\s*1\s*=\s*1/.test(t) || /'\s*--/.test(t) || /'\s*or\s*'[^']*'\s*=\s*'/.test(t) || /admin'\s*--/.test(t) || /'\s*or\s*true/.test(t);
+    }
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var u=document.getElementById('sq-user').value, p=document.getElementById('sq-pass').value;
+      q.textContent="query: SELECT * FROM users WHERE user='"+u+"' AND pass='"+p+"'";
+      if (isBypass(u) || isBypass(p)) {
+        msg.style.color='#39ff88';
+        msg.innerHTML='Your input broke out of the string and made the WHERE clause always true.\nThe query returned the admin row:\n\nadmin | <span class="flag">'+flag()+'</span>\n\nLESSON: never build SQL by pasting user input into it. Use parameterized queries so input is data, not code.';
+        return;
+      }
+      tries++;
+      msg.style.color='#ff3b4e';
+      msg.textContent = tries<3 ? 'Login failed: no matching user. (Hint: you don’t know a password… so don’t try to guess one.)'
+        : 'Login failed. The username and password are dropped straight into the SQL query above. What if your input contained SQL?';
+    });
+  })();
+</script>
+
+</div></body></html>

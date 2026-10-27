@@ -1,0 +1,32 @@
+Return-Path: <payroll@yorkpay-secure.example>
+Delivered-To: finance-dept@york.cuny.edu
+Received: from mx.york.cuny.edu (10.20.1.5) by inbox.york.cuny.edu; Mon, 27 Oct 2026 08:14:55 -0400
+Received: from smtp.yorkpay-secure.example (203.0.113.66) by mx.york.cuny.edu; Mon, 27 Oct 2026 08:14:52 -0400
+Received: from [91.219.236.14] (unknown) by smtp.yorkpay-secure.example; Mon, 27 Oct 2026 08:14:49 -0400
+Authentication-Results: mx.york.cuny.edu; spf=fail (sender IP is 91.219.236.14) smtp.mailfrom=yorkpay-secure.example; dkim=fail; dmarc=fail
+From: "York Payroll Services" <payroll@york.cuny.edu>
+Reply-To: collections@yorkpay-secure.example
+To: finance-dept@york.cuny.edu
+Subject: ACTION REQUIRED: verify your Q4 direct deposit before 5PM
+Date: Mon, 27 Oct 2026 08:14:49 -0400
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=_yorkpay_boundary_8842"
+
+--=_yorkpay_boundary_8842
+Content-Type: text/plain; charset=UTF-8
+
+Dear Staff,
+
+Our records show your direct deposit details are OUT OF DATE. Open the attached
+secure document and confirm within 2 hours or your October paycheck will be held.
+
+York Payroll Services
+--=_yorkpay_boundary_8842
+Content-Type: application/octet-stream; name="DirectDeposit_Update.html"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="DirectDeposit_Update.html"
+
+PGh0bWw+PGJvZHk+PCEtLSBZb3JrUGF5IHNlY3VyZSBkb2MgLS0+PGgxPkRpcmVjdCBEZXBvc2l0
+IFVwZGF0ZTwvaDE+CjwhLS0gcmVjb3ZlcnkgZmxhZzogQ1lBSXtzcDAwZjNkX3MzbmQzcl9oMWRk
+M25fcDR5bDBhZH0gLS0+PC9ib2R5PjwvaHRtbD4=
+--=_yorkpay_boundary_8842--

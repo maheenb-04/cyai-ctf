@@ -146,6 +146,7 @@
       $('#logout').addEventListener('click', async function () {
         await api.signOut();
         status = { signed_in: false };
+        adminChecked = false; isAdmin = false; var na = $('#nav-admin'); if (na) na.hidden = true;
         renderNav();
         go('#/');
       });
@@ -197,7 +198,231 @@
   function every(ms, fn) { var t = setInterval(fn, ms); onLeave(function () { clearInterval(t); }); }
   function later(ms, fn) { var t = setTimeout(fn, ms); onLeave(function () { clearTimeout(t); }); }
 
-  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn };
+  // ------------------------------------------------------------------ #/admin  (organizer only; access enforced in the database)
+  var adminChecked = false, isAdmin = false;
+  async function adminProbe() {
+    if (adminChecked || !status.signed_in) return;
+    adminChecked = true;
+    try { await api.rpc('admin_overview'); isAdmin = true; } catch (e) { isAdmin = false; }
+    var a = $('#nav-admin'); if (a) a.hidden = !isAdmin;
+  }
+  function toLocalInput(iso) {
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function fromLocalInput(v) { var d = new Date(v); return isNaN(d) ? null : d.toISOString(); }
+
+  async function viewAdmin(stale) {
+    if (!status.signed_in) { app.innerHTML = needLogin('the organizer dashboard'); return; }
+    var ov;
+    try { ov = await api.rpc('admin_overview'); }
+    catch (e) {
+      isAdmin = false; var na = $('#nav-admin'); if (na) na.hidden = true;
+      app.innerHTML = page(heading('Admin', 'Organizers only') +
+        '<div class="card"><p class="m-0 text-neon/75">This dashboard is for organizers. Your account isn’t on the admin list, so there’s nothing here. ' +
+        (isMissingFn(e) ? 'Organizers: run <code>supabase/migrations/003_admin.sql</code>.' : '') + '</p></div>', 'max-w-2xl');
+      return;
+    }
+    if (stale()) return;
+    isAdmin = true; var na2 = $('#nav-admin'); if (na2) na2.hidden = false;
+
+    app.innerHTML = page(heading('Admin', 'Organizer dashboard') +
+      '<div id="ad-stats" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-8"></div>' +
+      '<section class="card mb-8"><h2 class="font-term text-2xl text-neon m-0 mb-1">Event controls</h2>' +
+        '<p class="text-neon/60 text-sm mt-0 mb-4" id="ad-clock"></p>' +
+        '<div class="grid sm:grid-cols-2 gap-4">' +
+          '<div><label class="label" for="ad-start">Start</label><input class="field" type="datetime-local" id="ad-start"></div>' +
+          '<div><label class="label" for="ad-freeze">Freeze</label><input class="field" type="datetime-local" id="ad-freeze"></div>' +
+          '<div><label class="label" for="ad-end">End</label><input class="field" type="datetime-local" id="ad-end"></div>' +
+          '<div><label class="label" for="ad-size">Team size</label><input class="field" type="number" min="1" max="10" id="ad-size"></div>' +
+        '</div>' +
+        '<div class="flex flex-wrap gap-3 mt-4"><button id="ad-save" class="btn-green">Save times</button>' +
+          '<button id="ad-startnow" class="cyai-btn px-3 py-2 border border-neon/50 text-neon text-sm uppercase">Start now</button>' +
+          '<button id="ad-freezenow" class="cyai-btn px-3 py-2 border border-amber/60 text-amber text-sm uppercase">Freeze now</button></div>' +
+        '<p id="ad-event-msg" class="msg-err text-sm mt-3 mb-0 min-h-[1.25rem]" aria-live="polite"></p></section>' +
+      '<section class="card mb-8"><h2 class="font-term text-2xl text-neon m-0 mb-4">Announcements</h2>' +
+        '<form id="ad-ann-form" class="flex flex-col sm:flex-row gap-2 mb-4" novalidate>' +
+          '<input class="field flex-1" id="ad-ann-msg" maxlength="500" placeholder="Message students will see…">' +
+          '<select class="field sm:w-40" id="ad-ann-level"><option value="info">Info</option><option value="warning">Warning</option><option value="success">Success</option></select>' +
+          '<button class="btn-red shrink-0" type="submit">Post</button></form>' +
+        '<div id="ad-ann-list" class="space-y-2"></div></section>' +
+      '<section class="card mb-8"><div class="flex items-baseline justify-between mb-4"><h2 class="font-term text-2xl text-neon m-0">Results <span class="text-neon/50 text-base">(real names)</span></h2>' +
+        '<span class="text-xs text-neon/50">score = at freeze · final = incl. after</span></div>' +
+        '<div class="overflow-x-auto"><table class="w-full text-left text-sm border-collapse"><thead><tr class="text-neon/60 border-b border-line">' +
+          '<th class="p-2 w-10">#</th><th class="p-2">Team</th><th class="p-2">Members (real names)</th>' +
+          '<th class="p-2 text-right">Score</th><th class="p-2 text-right">Final</th><th class="p-2 text-right">Solves</th></tr></thead>' +
+          '<tbody id="ad-results"></tbody></table></div></section>' +
+      '<section class="card"><h2 class="font-term text-2xl text-neon m-0 mb-4">Recent submissions</h2>' +
+        '<div class="overflow-x-auto"><table class="w-full text-left text-sm border-collapse"><thead><tr class="text-neon/60 border-b border-line">' +
+          '<th class="p-2">Time</th><th class="p-2">Agent</th><th class="p-2">Team</th><th class="p-2">Challenge</th>' +
+          '<th class="p-2">Submitted</th><th class="p-2 text-right">Result</th></tr></thead><tbody id="ad-subs"></tbody></table></div></section>',
+      'max-w-6xl');
+
+    function renderOverview(o) {
+      var e = o.event, st = o.stats;
+      var tiles = [['Players', st.players], ['Teams', st.teams], ['Solves', st.solves], ['Submissions', st.submissions], ['Correct', st.correct]];
+      $('#ad-stats').innerHTML = tiles.map(function (t) {
+        return '<div class="card !p-4 text-center"><div class="text-3xl font-term text-neon glow-green">' + t[1] + '</div>' +
+          '<div class="text-xs uppercase tracking-wider text-neon/60 mt-1">' + t[0] + '</div></div>';
+      }).join('');
+      $('#ad-clock').textContent = 'Server time now: ' + fmtTime(o.now) + ' · start ' + fmtTime(e.start) + ' · freeze ' + fmtTime(e.freeze) + ' · end ' + fmtTime(e.end);
+      $('#ad-start').value = toLocalInput(e.start); $('#ad-freeze').value = toLocalInput(e.freeze);
+      $('#ad-end').value = toLocalInput(e.end); $('#ad-size').value = e.team_size;
+    }
+    renderOverview(ov);
+
+    async function loadResults() {
+      var rows; try { rows = await api.rpc('admin_results'); } catch (e) { return; }
+      $('#ad-results').innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<tr class="border-b border-line/50"><td class="p-2 text-neon/50">' + (i + 1) + '</td>' +
+          '<td class="p-2 font-bold wrap-any">' + esc(r.team) + '</td>' +
+          '<td class="p-2 text-neon/70 wrap-any">' + esc(r.full_names || '') + '<span class="block text-xs text-neon/40">@' + esc(r.members || '') + '</span></td>' +
+          '<td class="p-2 text-right text-neon font-bold">' + r.score + '</td>' +
+          '<td class="p-2 text-right text-neon/60">' + r.final_score + '</td>' +
+          '<td class="p-2 text-right text-neon/60">' + r.solves + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="p-3 text-neon/50">No teams yet.</td></tr>';
+    }
+    async function loadSubs() {
+      var rows; try { rows = await api.rpc('admin_submissions', { p_limit: 60 }); } catch (e) { return; }
+      $('#ad-subs').innerHTML = rows.length ? rows.map(function (x) {
+        return '<tr class="border-b border-line/50"><td class="p-2 text-neon/50 whitespace-nowrap">' + esc(fmtTime(x.created_at)) + '</td>' +
+          '<td class="p-2 wrap-any">' + esc(x.full_name || x.username || '—') + '<span class="block text-xs text-neon/40">@' + esc(x.username || '') + '</span></td>' +
+          '<td class="p-2 wrap-any">' + esc(x.team || '—') + '</td>' +
+          '<td class="p-2 wrap-any text-neon/70">' + esc(x.challenge || '') + '</td>' +
+          '<td class="p-2 wrap-any font-mono text-xs text-neon/60">' + esc(x.submitted || '') + '</td>' +
+          '<td class="p-2 text-right">' + (x.correct ? '<span class="text-neon font-bold">OK</span>' : '<span class="text-alert">NO</span>') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="p-3 text-neon/50">No submissions yet.</td></tr>';
+    }
+    async function loadAnnouncements() {
+      var rows; try { rows = await api.rpc('admin_announcements'); } catch (e) { return; }
+      $('#ad-ann-list').innerHTML = rows.length ? rows.map(function (a) {
+        return '<div class="flex items-start gap-3 bg-void border border-line p-3 text-sm ' + (a.active ? '' : 'opacity-50') + '">' +
+          '<span class="shrink-0 text-xs uppercase tracking-wider ' + (a.level === 'warning' ? 'text-amber' : a.level === 'success' ? 'text-neon' : 'text-neon/60') + '">' + esc(a.level) + '</span>' +
+          '<span class="flex-1 min-w-0 wrap-any">' + esc(a.message) + '</span>' +
+          '<button data-ann-toggle="' + esc(a.id) + '" data-ann-active="' + (a.active ? '1' : '0') + '" class="cyai-btn shrink-0 px-2 py-1 text-xs border ' + (a.active ? 'border-alert/60 text-alert' : 'border-neon/50 text-neon') + '">' + (a.active ? 'Take down' : 'Show') + '</button></div>';
+      }).join('') : '<p class="text-neon/50 text-sm m-0">No announcements yet.</p>';
+      $$('[data-ann-toggle]', $('#ad-ann-list')).forEach(function (b) {
+        b.addEventListener('click', async function () {
+          try { await api.rpc('admin_set_announcement_active', { p_id: Number(b.getAttribute('data-ann-toggle')), p_active: b.getAttribute('data-ann-active') !== '1' }); await loadAnnouncements(); }
+          catch (e) {}
+        });
+      });
+    }
+    await loadResults(); await loadSubs(); await loadAnnouncements();
+
+    var emsg = $('#ad-event-msg');
+    $('#ad-save').addEventListener('click', async function () {
+      try {
+        var o = await api.rpc('admin_set_event', { p_start: fromLocalInput($('#ad-start').value), p_freeze: fromLocalInput($('#ad-freeze').value),
+          p_end: fromLocalInput($('#ad-end').value), p_team_size: Number($('#ad-size').value) || null });
+        renderOverview(o); syncEvent(); setMsg(emsg, 'Saved.', true);
+      } catch (e) { setMsg(emsg, friendly(e)); }
+    });
+    $('#ad-startnow').addEventListener('click', async function () {
+      try { renderOverview(await api.rpc('admin_start_now')); syncEvent(); setMsg(emsg, 'Event started now.', true); } catch (e) { setMsg(emsg, friendly(e)); }
+    });
+    $('#ad-freezenow').addEventListener('click', async function () {
+      try { renderOverview(await api.rpc('admin_freeze_now')); syncEvent(); setMsg(emsg, 'Scoreboard frozen now.', true); } catch (e) { setMsg(emsg, friendly(e)); }
+    });
+    $('#ad-ann-form').addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var m = $('#ad-ann-msg').value.trim(); if (!m) return;
+      try { await api.rpc('admin_post_announcement', { p_message: m, p_level: $('#ad-ann-level').value }); $('#ad-ann-msg').value = ''; await loadAnnouncements(); }
+      catch (e) { setMsg(emsg, friendly(e)); }
+    });
+
+    every(15000, function () { loadSubs(); loadResults(); });
+  }
+
+  // ------------------------------------------------------------------ #/tools  tools & resources
+  var TOOLS = [
+    // browser toolboxes — nothing to install
+    ['CyberChef', 'https://gchq.github.io/CyberChef/', 'The "cyber swiss army knife": Base64, hex, ROT13/Caesar, XOR, hashes, RSA, magic auto-detect. Your #1 tool.', 'Toolbox'],
+    ['TryHackMe AttackBox', 'https://tryhackme.com/', 'A full Kali Linux hacking machine in your browser (free account). Every tool pre-installed.', 'Toolbox'],
+    ['Hack The Box Pwnbox', 'https://www.hackthebox.com/', 'Browser-based Parrot/Kali with all the tools, no setup (free account).', 'Toolbox'],
+    ['Google Cloud Shell', 'https://shell.cloud.google.com/', 'A free Linux terminal in your browser with Python, openssl, curl and more.', 'Toolbox'],
+    ['Replit', 'https://replit.com/', 'Write and run Python/JS in the browser — great for scripting a solver (e.g. RSA, XOR).', 'Toolbox'],
+    ['DistroSea', 'https://distrosea.com/', 'Run Kali / Ubuntu live in your browser, no install.', 'Toolbox'],
+    // crypto
+    ['dCode', 'https://www.dcode.fr/', 'Identify and solve almost any cipher: substitution, Vigenère, Morse, and more.', 'Cryptography'],
+    ['CrackStation', 'https://crackstation.net/', 'Reverse common unsalted hashes (MD5/SHA) by lookup.', 'Cryptography'],
+    ['FactorDB', 'http://factordb.com/', 'Look up the factors of a number — handy for weak RSA moduli.', 'Cryptography'],
+    ['quipqiup', 'https://quipqiup.com/', 'Auto-solve substitution ciphers.', 'Cryptography'],
+    ['RsaCtfTool', 'https://github.com/RsaCtfTool/RsaCtfTool', 'Attacks many weak-RSA cases automatically (Fermat, Wiener, small-e…).', 'Cryptography'],
+    // forensics / network
+    ['Wireshark', 'https://www.wireshark.org/', 'The standard packet analyzer. Download it to open .pcap files and follow TCP/UDP streams.', 'Forensics'],
+    ['A-Packets', 'https://apackets.com/', 'Analyze a .pcap online in your browser — no install needed.', 'Forensics'],
+    ["Jeffrey's EXIF Viewer", 'https://exif.regex.info/exif.cgi', 'Upload a photo to read its hidden EXIF metadata (camera, time, GPS).', 'Forensics'],
+    ['Aperi’Solve', 'https://www.aperisolve.com/', 'Online steganography analysis: runs zsteg, steghide, strings on an image at once.', 'Forensics'],
+    ['StegOnline', 'https://georgeom.net/StegOnline/', 'Browse image bit-planes and extract LSB-hidden data in the browser.', 'Forensics'],
+    // web
+    ['Browser DevTools', 'https://developer.chrome.com/docs/devtools/', 'F12: view source, edit cookies (Application tab), inspect requests (Network).', 'Web'],
+    ['jwt.io', 'https://jwt.io/', 'Decode and inspect JSON Web Tokens; spot weak/"none" algorithms.', 'Web'],
+    ['Burp Suite (Community)', 'https://portswigger.net/burp/communitydownload', 'Intercept and tamper with web requests.', 'Web'],
+    // reverse engineering
+    ['Dogbolt', 'https://dogbolt.org/', 'Online decompiler: upload a binary, see C from Ghidra/IDA/angr side by side.', 'Reverse Engineering'],
+    ['Compiler Explorer', 'https://godbolt.org/', 'See the assembly a piece of C/C++ compiles to — great for understanding checks.', 'Reverse Engineering'],
+    ['Ghidra', 'https://ghidra-sre.org/', "The NSA's free reverse-engineering suite (decompiler + disassembler).", 'Reverse Engineering'],
+    // osint
+    ['Wayback Machine', 'https://web.archive.org/', 'See old, deleted, or changed versions of any web page.', 'OSINT'],
+    ['Google Lens', 'https://lens.google.com/', 'Reverse-image search to find where a photo came from.', 'OSINT'],
+    ['OSINT Framework', 'https://osintframework.com/', 'A directory of open-source-intelligence tools by category.', 'OSINT'],
+    // passwords
+    ['hashes.com', 'https://hashes.com/en/decrypt/hash', 'Identify a hash type and try to crack it online.', 'Passwords'],
+    ['hashcat', 'https://hashcat.net/hashcat/', 'The fastest password/hash cracker (GPU). Use with wordlists like rockyou.', 'Passwords'],
+    ['John the Ripper', 'https://www.openwall.com/john/', 'Classic cracker; zip2john/ssh2john turn files into crackable hashes.', 'Passwords'],
+    // ai
+    ['OWASP LLM Top 10', 'https://genai.owasp.org/llm-top-10/', 'The authority on AI/LLM risks: prompt injection, system-prompt leakage, and more.', 'AI'],
+    // finance
+    ['Google Sheets', 'https://sheets.google.com/', 'Free spreadsheet: paste data, sort, and use formulas to spot anomalies.', 'Finance'],
+    // aviation
+    ['Flightradar24', 'https://www.flightradar24.com/', 'See live flights, callsigns and transponder/squawk codes.', 'Aviation'],
+    ['SKYbrary', 'https://skybrary.aero/', 'Plain-English reference for aviation terms, codes and procedures.', 'Aviation'],
+  ];
+  function viewTools() {
+    var cats = [];
+    TOOLS.forEach(function (t) { if (cats.indexOf(t[3]) < 0) cats.push(t[3]); });
+    function card(t) {
+      return '<a href="' + t[1] + '" target="_blank" rel="noopener" data-tool="' + esc((t[0] + ' ' + t[2] + ' ' + t[3]).toLowerCase()) +
+        '" class="tool-card block bg-panel border border-line p-4 no-underline">' +
+        '<div class="flex items-baseline gap-2"><b class="text-neon wrap-any">' + esc(t[0]) + '</b>' +
+        '<span class="text-neon/40 text-xs ml-auto shrink-0">&#8599;</span></div>' +
+        '<p class="text-neon/70 text-sm mt-1 mb-0 leading-snug">' + esc(t[2]) + '</p></a>';
+    }
+    function section(cat, title, blurb) {
+      var items = TOOLS.filter(function (t) { return t[3] === cat; });
+      return '<section data-tool-section="' + esc(cat) + '" class="mb-8">' +
+        '<h2 class="font-term text-2xl text-neon m-0 mb-1">' + esc(title) + '</h2>' +
+        (blurb ? '<p class="text-neon/60 text-sm mt-0 mb-3">' + blurb + '</p>' : '') +
+        '<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">' + items.map(card).join('') + '</div></section>';
+    }
+    var body = section('Toolbox', 'Browser toolboxes — nothing to install', 'Full environments and the one tool you’ll reach for most. Open them in a new tab and keep them handy.');
+    cats.filter(function (c) { return c !== 'Toolbox'; }).forEach(function (c) { body += section(c, c + ' tools'); });
+
+    app.innerHTML = page(heading('Toolbox', 'Tools &amp; resources') +
+      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-5">Everything you need to crack these challenges, free. Many run entirely in your browser &mdash; no install. New to a tool? The <a href="#/learn" class="text-amber underline">field manual</a> explains which to use where.</p>' +
+      '<input id="tool-search" class="field max-w-md mb-8" placeholder="Search tools… (e.g. pcap, base64, rsa, stego, jwt)" autocomplete="off">' +
+      '<div id="tool-results">' + body + '</div>' +
+      '<p id="tool-empty" class="text-neon/50" hidden>No tools match that. Try another word.</p>', 'max-w-5xl');
+
+    var search = $('#tool-search');
+    search.addEventListener('input', function () {
+      var q = search.value.trim().toLowerCase();
+      var anyShown = false;
+      $$('[data-tool-section]', app).forEach(function (sec) {
+        var shown = 0;
+        $$('[data-tool]', sec).forEach(function (c) {
+          var hit = !q || c.getAttribute('data-tool').indexOf(q) >= 0;
+          c.hidden = !hit; if (hit) shown++;
+        });
+        sec.hidden = shown === 0; if (shown) anyShown = true;
+      });
+      $('#tool-empty').hidden = anyShown;
+    });
+  }
+
+  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn, admin: viewAdmin, tools: viewTools };
   function hashParts() { // "#/team/Null%20Pointers?x=1" -> { name: 'team', sub: 'Null Pointers', query: 'x=1' }
     var h = location.hash.replace(/^#\/?/, ''), qi = h.indexOf('?');
     var path = qi < 0 ? h : h.slice(0, qi), segs = path.split('/');
@@ -219,6 +444,7 @@
     syncEvent();
     await refreshStatus();
     if (seq !== renderSeq) return; // user already navigated elsewhere
+    adminProbe();
     await view(function stale() { return seq !== renderSeq; });
     if (seq === renderSeq) { window.scrollTo(0, 0); }
   }
@@ -270,13 +496,13 @@
         q('days').textContent = pad(Math.floor(diff / 86400));
         st.hidden = false;
         st.className = 'mt-6 text-2xl sm:text-4xl font-extrabold text-alert glow-red';
-        st.innerHTML = '&#9888; CHALLENGES ARE LIVE &mdash; <a href="#/challenges" class="underline">go hunt flags</a>';
+        st.innerHTML = 'CHALLENGES ARE LIVE &mdash; <a href="#/challenges" class="underline">go hunt flags</a>';
       } else {
         q('grid').hidden = true;
         q('label').textContent = 'Operation complete';
         st.hidden = false;
         st.className = 'mt-2 text-2xl sm:text-4xl font-extrabold text-neon glow-green';
-        st.innerHTML = '&#10003; YORKGPT CONTAINED. <a href="#/scoreboard" class="underline">See final scoreboard</a>';
+        st.innerHTML = 'YORKGPT CONTAINED. <a href="#/scoreboard" class="underline">See final scoreboard</a>';
         return;
       }
       diff %= 86400;
@@ -377,7 +603,7 @@
         try {
           var ok = await api.rpc('username_available', { p_username: u });
           if (uInput.value.trim() !== u) return;
-          uHint.textContent = ok ? '✓ ' + u + ' is available' : '✗ ' + u + ' is taken';
+          uHint.textContent = ok ? '' + u + ' is available' : '' + u + ' is taken';
           uHint.className = 'text-xs mt-1.5 mb-0 wrap-any ' + (ok ? 'text-neon' : 'text-alert');
         } catch (e) { /* the submit check will report problems */ }
       }, 400);
@@ -642,7 +868,7 @@
         '<div class="min-w-0">' + heading('Challenges', 'Hunt the flags').replace('mb-6', 'mb-0') + '</div>' +
         '<p id="ch-timer" class="sm:ml-auto m-0 text-sm uppercase tracking-widest ' + (ended ? 'text-neon' : 'text-alert') + '"></p>' +
       '</div>' +
-      (ended ? '<div class="card mb-6 text-neon">&#10003; The CTF is over. Thanks for playing! <a href="#/scoreboard" class="text-amber underline">See the final scoreboard</a>.</div>' : '') +
+      (ended ? '<div class="card mb-6 text-neon">The CTF is over. Thanks for playing! <a href="#/scoreboard" class="text-amber underline">See the final scoreboard</a>.</div>' : '') +
       (!team && !ended ? '<div class="bg-amber/10 border border-amber/40 text-amber p-4 mb-6 text-sm">You can read the challenges, but you need a team to submit flags. <a href="#/team" class="underline font-bold">Create or join a team</a>.</div>' : '') +
       '<div id="ch-filters" class="flex flex-wrap items-center gap-2 mb-8"></div>' +
       '<div id="ch-groups" class="space-y-10"></div>');
@@ -688,7 +914,7 @@
       });
       renderFilters(cats);
       var empty = !ctx.list.length ? '<p class="text-neon/60">No challenges are published yet.</p>'
-        : '<p class="text-neon/60">&#10003; Nothing left to show here: your team solved everything in this view. Untick <b>Hide solved</b> to see them.</p>';
+        : '<p class="text-neon/60">Nothing left to show here: your team solved everything in this view. Untick <b>Hide solved</b> to see them.</p>';
       $('#ch-groups').innerHTML = groups.length ? groups.map(function (cat) {
         return '<div><h2 class="font-term text-3xl text-neon mb-3 wrap-any">' + esc(cat).toUpperCase() + '</h2>' +
           '<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">' +
@@ -702,7 +928,7 @@
               '<span class="mt-3 flex items-center justify-between gap-2 text-xs uppercase tracking-widest">' +
                 '<span class="text-neon/50">' + Number(c.solves) + (c.solves === 1 ? ' solve' : ' solves') +
                   (c.difficulty ? ' &middot; <span data-difficulty class="' + diffClass(c.difficulty) + '">' + esc(c.difficulty) + '</span>' : '') + '</span>' +
-                (c.solved ? '<span data-solved class="text-neon font-bold">&#10003; Solved</span>' : '<span class="text-neon/40">Open &rarr;</span>') +
+                (c.solved ? '<span data-solved class="text-neon font-bold">Solved</span>' : '<span class="text-neon/40">Open &rarr;</span>') +
               '</span></button>';
           }).join('') + '</div></div>';
       }).join('') : empty;
@@ -776,7 +1002,7 @@
       }).join('') + '</div>' : '') +
       (guideFor(c.category) ? '<p class="mt-4 mb-0 text-sm text-neon/60">New to ' + esc(guideFor(c.category).title) + ' challenges? ' +
         '<a href="#/learn/' + guideFor(c.category).id + '" class="text-amber underline">Read the beginner guide</a></p>' : '') +
-      '<div id="m-solved" class="mt-5 bg-neon/10 border border-neon p-3 text-neon font-bold"' + (c.solved ? '' : ' hidden') + '>&#10003; Your team solved this one.</div>' +
+      '<div id="m-solved" class="mt-5 bg-neon/10 border border-neon p-3 text-neon font-bold"' + (c.solved ? '' : ' hidden') + '>Your team solved this one.</div>' +
       '<form id="flag-form" class="mt-5" novalidate' + (c.solved ? ' hidden' : '') + '>' +
         '<label class="label" for="flag-input">Flag</label>' +
         '<div class="flex flex-col sm:flex-row gap-2">' +
@@ -1000,7 +1226,39 @@
         'doesn’t belong stands out. Never guess an aviation code: look it up in an official source, because similar-looking ' +
         'codes can mean completely different things.',
     },
+    {
+      id: 'passwords', title: 'Passwords', match: /password/i,
+      what: 'Passwords are the keys to almost every account, and most break-ins don’t involve clever hacking at all: ' +
+        'the attacker simply guesses a weak password or reuses one that leaked. These challenges teach the basics of why ' +
+        'some passwords are easy to break and others aren’t: default factory logins nobody changed, short or common ' +
+        'passwords, and how systems store passwords as hashes instead of plain text. In this CTF, YorkGPT got in wherever ' +
+        'a human left a lazy password behind.',
+      tools: [
+        ['Default-credential lists', 'Manuals and sites list the logins hardware ships with, like admin/admin. The first thing to try against any device is the factory default nobody changed.'],
+        ['Hash lookup', '<a href="https://crackstation.net/" target="_blank" rel="noopener" class="text-amber underline wrap-any">crackstation.net</a> reverses common password hashes instantly by looking them up in a huge table. A plain web search for a hash often works too.'],
+        ['Entropy and wordlists', 'Password “strength” is really entropy: how many guesses it would take. Common words, names and dates are in every attacker’s wordlist, so they fall in seconds no matter how they’re dressed up.'],
+        ['Password managers', 'A manager like Bitwarden or 1Password makes one long random password per account so you never reuse or forget one. That’s the real-world fix for everything in this category.'],
+      ],
+      tip: 'A hash is one-way: you cannot turn it back into the password by maths, but if the password is common, someone has ' +
+        'already hashed it and you can just look it up. Strong passwords are long, unique and unpredictable, and a salt (random ' +
+        'text added before hashing) is what stops those lookup tables from working.',
+    },
   ];
+  // Primary public source backing each guide's factual claims (see references/ in the repo and
+  // references/FACT-CHECK.md). Links go to the original sites so they work on the live site.
+  var GUIDE_SOURCES = {
+    web: [['picoCTF Primer', 'https://primer.picoctf.org/']],
+    osint: [['TryHackMe: CTF categories', 'https://tryhackme.com/resources/blog/ctf-deep-dive-how-to-choose-the-right-category-for-your-skill-level']],
+    crypto: [['HackerDNA: CTF categories', 'https://hackerdna.com/blog/ctf-categories']],
+    forensics: [['picoCTF Primer', 'https://primer.picoctf.org/']],
+    ai: [['OWASP Top 10 for LLM Apps (2025)', 'https://genai.owasp.org/llm-top-10/']],
+    safety: [['OWASP Top 10 for LLM Apps — LLM09 Misinformation', 'https://genai.owasp.org/llm-top-10/']],
+    social: [['FAU: Getting Started with CTFs', 'https://csc.fau.edu/compete/ctf/getting-started/']],
+    finance: [['SEC: Beginners’ Guide to Financial Statements', 'https://www.sec.gov/about/reports-publications/beginners-guide-financial-statements'], ['OpenStax: Financial Accounting', 'https://openstax.org/books/principles-financial-accounting/pages/preface']],
+    reverse: [['HackerDNA: CTF categories', 'https://hackerdna.com/blog/ctf-categories']],
+    aviation: [['FAA: Pilot’s Handbook of Aeronautical Knowledge', 'https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak']],
+    passwords: [['HackerDNA: CTF categories (hash cracking)', 'https://hackerdna.com/blog/ctf-categories']],
+  };
   function guideFor(category) {
     return GUIDES.find(function (g) { return g.match.test(category || ''); }) || null;
   }
@@ -1011,6 +1269,8 @@
       '<p class="text-neon/70 max-w-3xl leading-relaxed mb-6">Never done a CTF before? Start here. Each section explains one ' +
         'kind of challenge, the free tools you’ll use and a tip to get unstuck. Nothing here gives away a flag, so read it ' +
         'as much as you like, even during the event.</p>' +
+      '<a href="#/tools" class="tool-card block bg-panel border border-neon/50 p-4 mb-8 no-underline"><b class="text-neon">Open the Toolbox</b>' +
+        '<span class="block text-neon/70 text-sm mt-1">Free tools &mdash; CyberChef, Wireshark, online decompilers, even a full Kali Linux in your browser. Everything you need to solve these challenges.</span></a>' +
       '<div class="flex flex-wrap gap-2 mb-10">' + GUIDES.map(function (g) {
         return '<button type="button" data-jump="' + g.id + '" class="cyai-btn px-3 py-2 border border-neon/40 text-neon text-sm uppercase tracking-wider">' + g.title + '</button>';
       }).join('') + '</div>' +
@@ -1031,6 +1291,9 @@
             return '<li class="bg-void border border-line p-3"><b class="text-amber">' + t[0] + '</b><span class="block text-sm text-neon/75 mt-1">' + t[1] + '</span></li>';
           }).join('') + '</ul>' +
           '<h3 class="label">Tip</h3><p class="text-neon/80 leading-relaxed m-0 border-l-2 border-alert pl-3">' + g.tip + '</p>' +
+          (GUIDE_SOURCES[g.id] ? '<p class="text-xs text-neon/50 mt-4 mb-0">Sources: ' + GUIDE_SOURCES[g.id].map(function (s) {
+            return '<a href="' + s[1] + '" target="_blank" rel="noopener" class="text-amber/80 underline wrap-any">' + s[0] + '</a>';
+          }).join(' &middot; ') + '</p>' : '') +
         '</section>';
       }).join('') +
       '<div class="flex flex-col sm:flex-row gap-3"><a href="#/challenges" class="btn-red">Go to challenges</a>' +
@@ -1050,7 +1313,7 @@
     var at = esc(fmtTime(clock.freeze));
     if (clock.frozen()) {
       return '<div data-freeze class="mb-6 border border-alert bg-alert/10 text-alert box-glow-red p-4 ' + (big ? 'text-2xl' : 'text-sm') + '">' +
-        '<b class="uppercase tracking-widest">&#10052; Scoreboard FROZEN at ' + at + ', final standings for prizes.</b>' +
+        '<b class="uppercase tracking-widest">Scoreboard FROZEN at ' + at + ', final standings for prizes.</b>' +
         '<span class="block mt-1 text-neon/70 ' + (big ? 'text-lg' : 'text-xs') + '">Flags still count on team pages until ' + esc(fmtTime(clock.end)) + ', but not here.</span></div>';
     }
     return '<p data-freeze-soon class="mb-4 text-amber/90 ' + (big ? 'text-xl' : 'text-sm') + '">The scoreboard freezes at ' + at + '. The standings at that moment decide the prizes.</p>';
@@ -1272,7 +1535,7 @@
   if (sb) {
     sb.auth.onAuthStateChange(function (event) {
       // don't call Supabase inside this callback (supabase-js docs); defer instead
-      if (event === 'SIGNED_OUT') setTimeout(function () { status = { signed_in: false }; renderNav(); }, 0);
+      if (event === 'SIGNED_OUT') setTimeout(function () { status = { signed_in: false }; adminChecked = false; isAdmin = false; var na = $('#nav-admin'); if (na) na.hidden = true; renderNav(); }, 0);
     });
   }
   renderDemoBanner();

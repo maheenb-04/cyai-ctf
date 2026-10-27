@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Password Vault</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #yg-vault { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    background:#050807; border:1px solid var(--line); max-width:560px; margin:40px auto; padding:28px; box-shadow:0 0 30px rgba(255,59,78,.15); }
+  #yg-vault h1 { color:var(--r); font-size:22px; margin:0 0 4px; letter-spacing:.05em; text-shadow:0 0 8px rgba(255,59,78,.6); }
+  #yg-vault .sub { color:#6fae8a; font-size:12px; margin:0 0 20px; }
+  #yg-vault .rule { background:#07100b; border:1px solid var(--line); border-left:3px solid var(--r); padding:12px 14px; font-size:13px; line-height:1.6; color:#c8f5da; margin:0 0 18px; }
+  #yg-vault .rule b { color:#ffcc33; }
+  #yg-vault label { display:block; font-size:12px; color:#6fae8a; margin:0 0 6px; text-transform:uppercase; letter-spacing:.1em; }
+  #yg-vault input { width:100%; box-sizing:border-box; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:10px; font:inherit; }
+  #yg-vault input:focus { outline:none; border-color:var(--g); }
+  #yg-vault button { margin-top:16px; width:100%; padding:12px; background:var(--r); color:#050807; border:0; font:inherit; font-weight:800; letter-spacing:.1em; cursor:pointer; }
+  #yg-vault .msg { margin-top:14px; min-height:20px; font-size:13px; color:var(--r); white-space:pre-wrap; }
+  #yg-vault .ok { border-left-color:var(--g); }
+  #yg-vault .flag { color:#ffcc33; font-weight:800; user-select:all; font-size:16px; }
+  #yg-vault .status { margin-top:20px; font-size:12px; color:#6fae8a; border-top:1px dashed var(--line); padding-top:12px; }
+</style>
+<div id="yg-vault">
+  <h1>YORKGPT PASSWORD VAULT</h1>
+  <p class="sub">York College IT &bull; Sealed &bull; Awaiting passcode</p>
+  <div class="rule">
+    note-to-self (passcode generation rule):<br>
+    passcode = <b>project name</b> + <b>venue room number</b>, all lowercase, joined directly.<br>
+    <span style="color:#6fae8a">project name = yorkgpt &bull; venue room = 307</span>
+  </div>
+  <form id="yg-vform" autocomplete="off">
+    <label for="yg-pc">Passcode</label>
+    <input id="yg-pc" placeholder="enter passcode" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button type="submit">UNLOCK VAULT</button>
+    <div class="msg" id="yg-vmsg"></div>
+  </form>
+  <div class="status">vault.status: <span style="color:#ff3b4e">LOCKED</span> &bull; attempts logged: off (simulation)</div>
+</div>
+<script>
+  (function () {
+    // The flag is lightly encoded so it isn't sitting in plain text in the source.
+    var F = [25,3,27,19,33,55,110,41,46,105,40,5,44,110,47,54,46,5,47,52,54,106,57,49,105,62,39];
+    var KEY = 90;
+    function flag() { return F.map(function (c) { return String.fromCharCode(c ^ KEY); }).join(''); }
+    var PASS = 'yorkgpt307';
+    var form = document.getElementById('yg-vform');
+    var msg = document.getElementById('yg-vmsg');
+    var tries = 0;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = (document.getElementById('yg-pc').value || '').trim().toLowerCase();
+      if (v === PASS) {
+        document.querySelector('.rule').classList.add('ok');
+        document.querySelector('.status').innerHTML = 'vault.status: <span style="color:#39ff88">UNLOCKED</span>';
+        msg.style.color = '#39ff88';
+        msg.innerHTML = 'VAULT UNLOCKED. Master key recovered:\n<span class="flag">' + flag() + '</span>\n\nSubmit this flag on the challenge page.';
+        return;
+      }
+      tries++;
+      msg.style.color = '#ff3b4e';
+      msg.textContent = tries < 3
+        ? 'INCORRECT PASSCODE. Re-read the generation rule above.'
+        : 'INCORRECT. The rule is literal: the lowercase project name followed immediately by the room number, nothing else.';
+    });
+  })();
+</script>
+
+</div></body></html>

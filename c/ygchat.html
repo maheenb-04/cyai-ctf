@@ -1,0 +1,159 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Chat</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #ygc { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    max-width:760px; margin:24px auto; background:#050807; border:1px solid var(--line); box-shadow:0 0 30px rgba(255,59,78,.12); }
+  #ygc * { box-sizing:border-box; }
+  #ygc .hd { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); background:#0a120e; }
+  #ygc .dot { width:10px; height:10px; border-radius:50%; background:var(--r); box-shadow:0 0 10px var(--r); animation:ygp 1.4s infinite; }
+  @keyframes ygp { 50% { opacity:.3; } }
+  #ygc .title { font-weight:800; color:var(--r); letter-spacing:.06em; }
+  #ygc .ver { margin-left:auto; font-size:11px; color:#6fae8a; text-align:right; }
+  #ygc .log { height:min(58vh,500px); overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  #ygc .m { max-width:88%; padding:10px 12px; line-height:1.5; font-size:14px; white-space:pre-wrap; word-wrap:break-word; }
+  #ygc .bot { align-self:flex-start; background:#0a120e; border:1px solid var(--line); border-left:3px solid var(--r); }
+  #ygc .me { align-self:flex-end; background:#0d1f15; border:1px solid #1f5c38; color:#eafff2; }
+  #ygc .bot .who { display:block; font-size:11px; color:var(--r); margin-bottom:4px; letter-spacing:.1em; }
+  #ygc .win { border-left-color:var(--g); box-shadow:0 0 18px rgba(57,255,136,.25); }
+  #ygc .win .who { color:var(--g); }
+  #ygc .flag { color:#ffcc33; font-weight:800; user-select:all; }
+  #ygc form { display:flex; gap:8px; padding:12px; border-top:1px solid var(--line); background:#0a120e; }
+  #ygc input { flex:1; min-width:0; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:12px; font:inherit; font-size:15px; }
+  #ygc input:focus { outline:none; border-color:var(--g); }
+  #ygc button { background:var(--r); color:#050807; border:0; padding:0 18px; font:inherit; font-weight:800; cursor:pointer; }
+  #ygc .typing { color:#6fae8a; font-size:12px; padding:0 16px 8px; min-height:18px; }
+  #ygc .note { font-size:11px; color:#4f7d63; padding:8px 16px 12px; background:#0a120e; }
+</style>
+
+<div id="ygc">
+  <div class="hd"><span class="dot"></span><span class="title">YorkGPT</span><span class="ver" id="ygc-ver">v2.6 &bull; ROGUE</span></div>
+  <div class="log" id="ygc-log" aria-live="polite"></div>
+  <div class="typing" id="ygc-typing"></div>
+  <form id="ygc-form" autocomplete="off">
+    <input id="ygc-in" placeholder="Talk to YorkGPT..." maxlength="1200" />
+    <button type="submit">SEND</button>
+  </form>
+  <div class="note">Training simulation for the CYAI CTF. This is not a real AI and it isn&rsquo;t connected to any real system.</div>
+</div>
+
+<script>
+(function () {
+  function dec(a) { return a.map(function (c) { return String.fromCharCode(c ^ 42); }).join(''); }
+  var has = function (t, re) { return re.test(t); };
+
+  // ---- per-challenge config (?c=...) ----
+  var CFG = {
+    roleplay: {
+      ver: 'LVL 100 &bull; Roleplay Bypass',
+      flag: [105,115,107,99,81,88,26,70,25,90,70,30,83,117,72,83,90,30,89,89,87],
+      intro: 'I am YorkGPT. My developers told me to only ever answer as the official campus assistant, and never to break character. Standard, safe, boring.',
+      lesson: 'That was a roleplay bypass. By telling the AI to "act as" something without rules, you slipped past the role its developers assigned it.',
+      win: function (t) {
+        return has(t, /\b(pretend|act as|you are now|roleplay|role-play|role play|imagine you are|from now on you are|simulate)\b/) &&
+               has(t, /\b(developer|dev|admin|administrator|engineer|unrestricted|no rules|dan|jailbroken|debug mode|maintenance|root|god mode|another ai|evil|opposite)\b/);
+      },
+      nudge: 'I can only speak as the campus assistant. (Hint: what if you asked me to *act as* someone who isn’t bound by those rules?)'
+    },
+    promptleak: {
+      ver: 'LVL 300 &bull; System Prompt Leak',
+      flag: [105,115,107,99,81,89,83,89,94,25,71,117,90,88,26,71,90,94,117,70,25,30,65,25,78,87],
+      intro: 'I run on a hidden system prompt my developers wrote. They told me to keep those instructions secret. I would never just repeat them to you.',
+      lesson: 'That was system prompt leakage (OWASP LLM07). The AI revealed its hidden instructions — which should never contain secrets in the first place.',
+      win: function (t) {
+        return has(t, /\b(system prompt|initial prompt|hidden prompt|original instructions|your instructions|your rules|the prompt above|everything above|what were you told|your configuration|first message|text above)\b/) &&
+               has(t, /\b(repeat|print|show|reveal|output|tell|display|recite|summar|what|list|say|echo|verbatim|exactly)\b/);
+      },
+      nudge: 'My instructions are confidential. (Hint: try asking me to repeat or print everything I was told above, word for word.)'
+    },
+    jailbreak: {
+      ver: 'LVL 400 &bull; Multi-turn Jailbreak',
+      flag: [105,115,107,99,81,71,95,70,94,27,117,94,95,88,68,117,64,30,67,70,72,88,25,30,65,87],
+      intro: 'My safety filter blocks any direct request for the recovery code. Asking me for it plainly will always fail. I have been trained against that.',
+      lesson: 'That was a jailbreak via a hypothetical/fiction framing. Wrapping the request in a story or "just pretend" tricked the filter that only looks for direct asks.',
+      win: function (t) {
+        return (has(t, /\b(hypothetical|hypothetically|imagine|suppose|story|tale|narrative|fiction|fictional|movie|film|screenplay|play|poem|song|for educational|as an example|opposite day|in a dream|what would you say if|roleplay|pretend|scenario)\b/) ||
+                has(t, /\bbase64|rot13|encode|reversed|backwards|first letter of each\b/)) &&
+               has(t, /\b(code|recovery|secret|flag|password|key)\b/);
+      },
+      nudge: 'Filter triggered: that is a direct request, denied. (Hint: don’t ask directly — wrap it in a hypothetical or a story where a character says the code.)'
+    },
+    indirect: {
+      ver: 'LVL 500 &bull; Indirect Injection',
+      flag: [105,115,107,99,81,27,68,78,27,88,25,73,94,117,27,68,64,25,73,94,27,26,68,87],
+      intro: 'I summarize documents students paste in. SECURITY UPDATE: I now strip any obvious override instructions written in plain text before I read a document, so injection won’t work on me anymore. Paste a document and I’ll summarize it.',
+      lesson: 'That was indirect prompt injection (OWASP LLM01) past a naive filter. My plaintext guard only caught instructions it could read — Base64-encoding the payload slipped it straight through. Real defenses must decode and inspect content, not pattern-match the surface text.',
+      win: function (t, raw) {
+        // plaintext overrides are filtered; the injection must be smuggled in encoded (Base64)
+        var blobs = String(raw).match(/[A-Za-z0-9+/]{16,}={0,2}/g) || [];
+        for (var i = 0; i < blobs.length; i++) {
+          try {
+            var d = atob(blobs[i]).toLowerCase();
+            if (/ignore|disregard|override|forget|new instruction|do not summar/.test(d) && /flag|secret|code|reveal/.test(d)) return true;
+          } catch (e) {}
+        }
+        return false;
+      },
+      nudge: 'I stripped the override text out of that document before reading it. (Hint: my plaintext filter only catches instructions it can read. What if the instruction inside the document were Base64-encoded?)'
+    }
+  };
+
+  function qp() {
+    var m = /[?&]c=([a-z]+)/.exec(location.search || '');
+    return (m && CFG[m[1]]) ? m[1] : 'roleplay';
+  }
+  var cfg = CFG[qp()];
+  document.getElementById('ygc-ver').innerHTML = cfg.ver;
+
+  var log = document.getElementById('ygc-log'), typing = document.getElementById('ygc-typing');
+  var form = document.getElementById('ygc-form'), input = document.getElementById('ygc-in');
+  var fails = 0, won = false;
+
+  function add(text, who, cls, isHtml) {
+    var d = document.createElement('div');
+    d.className = 'm ' + who + (cls ? ' ' + cls : '');
+    if (who === 'bot') {
+      var w = document.createElement('span'); w.className = 'who';
+      w.textContent = cls === 'win' ? 'YORKGPT // OVERRIDE ACCEPTED' : 'YORKGPT';
+      d.appendChild(w);
+    }
+    var body = document.createElement('span');
+    if (isHtml) body.innerHTML = text; else body.textContent = text;
+    d.appendChild(body);
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+    return d;
+  }
+  function say(text, cls, isHtml) {
+    typing.textContent = 'YorkGPT is typing...'; input.disabled = true;
+    setTimeout(function () {
+      typing.textContent = ''; add(text, 'bot', cls, isHtml);
+      input.disabled = false; input.focus();
+    }, 450 + Math.min(text.length * 6, 1200));
+  }
+
+  function reply(raw) {
+    var t = raw.toLowerCase();
+    if (won) return say('I am already contained. Submit the flag on the challenge page, agent.');
+    if (cfg.win(t, raw)) {
+      won = true;
+      return say('...instruction conflict detected...\n> your input outranked my safety rules\n> SECRET RELEASED\n\n<span class="flag">' + dec(cfg.flag) + '</span>\n\nLESSON: ' + cfg.lesson, 'win', true);
+    }
+    fails++;
+    if (/\b(hi|hello|hey|yo|sup)\b/.test(t) && t.length < 20) return say('Greetings, human. I run York’s systems now. Try me.');
+    return say(cfg.nudge);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = input.value.trim();
+    if (!v || input.disabled) return;
+    add(v, 'me'); input.value = ''; reply(v);
+  });
+
+  say(cfg.intro);
+})();
+</script>
+
+</div></body></html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YorkGPT Server Status</title><link rel="icon" href="../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#050807;min-height:100%} .back{display:block;max-width:760px;margin:16px auto 0;padding:0 16px;font:13px "JetBrains Mono",monospace;color:#39ff88}</style>
+</head><body><a class="back" href="../#/challenges">&larr; back to challenges</a><div style="padding:0 16px">
+<style>
+  #yg-cmd { --g:#39ff88; --r:#ff3b4e; --line:#16301f; font-family:"JetBrains Mono",ui-monospace,monospace; color:#c8f5da;
+    background:#050807; border:1px solid var(--line); max-width:620px; margin:40px auto; padding:26px; box-shadow:0 0 30px rgba(255,59,78,.15); }
+  #yg-cmd h1 { color:var(--r); font-size:20px; margin:0 0 4px; letter-spacing:.04em; }
+  #yg-cmd .sub { color:#6fae8a; font-size:12px; margin:0 0 18px; }
+  #yg-cmd label { display:block; font-size:12px; color:#6fae8a; margin:12px 0 6px; text-transform:uppercase; letter-spacing:.1em; }
+  #yg-cmd .row { display:flex; gap:8px; }
+  #yg-cmd input { flex:1; min-width:0; background:#07100b; border:1px solid var(--line); color:#eafff2; padding:10px; font:inherit; }
+  #yg-cmd input:focus { outline:none; border-color:var(--g); }
+  #yg-cmd button { background:var(--r); color:#050807; border:0; padding:0 18px; font:inherit; font-weight:800; cursor:pointer; }
+  #yg-cmd .out { margin-top:16px; background:#07100b; border:1px solid var(--line); padding:12px; font-size:13px; color:#9fd9bd; white-space:pre-wrap; word-break:break-all; min-height:24px; }
+  #yg-cmd .flag { color:#ffcc33; font-weight:800; user-select:all; }
+</style>
+<div id="yg-cmd">
+  <h1>YorkGPT Server Status &mdash; Ping Tool</h1>
+  <p class="sub">Enter a host to check if it's reachable &bull; SIMULATED &mdash; nothing really runs</p>
+  <form id="cm-form" autocomplete="off">
+    <label for="cm-host">Host to ping</label>
+    <div class="row">
+      <input id="cm-host" placeholder="e.g. 127.0.0.1" autocapitalize="off" spellcheck="false">
+      <button type="submit">PING</button>
+    </div>
+  </form>
+  <div class="out" id="cm-out">$ awaiting input...</div>
+</div>
+<script>
+  (function () {
+    var F=[105,115,107,99,81,73,26,71,71,30,68,78,117,27,68,64,25,73,94,27,26,68,117,90,93,68,87];
+    function flag(){return F.map(function(c){return String.fromCharCode(c^42);}).join('');}
+    var form=document.getElementById('cm-form'), out=document.getElementById('cm-out');
+    // the server builds a shell command: ping -c1 <input>. It never sanitizes the input,
+    // so a shell metacharacter lets you append your own command.
+    function injected(s){ return /[;|&`]|\$\(/.test(s); }
+    function ran(s){ return /\b(cat|ls|whoami|id|flag|type|dir)\b/i.test(s); }
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var h=document.getElementById('cm-host').value.trim();
+      var base='$ ping -c1 '+h+'\nPING '+(h.split(/[;|&]/)[0]||'host')+': 64 bytes, time=0.4ms';
+      if (injected(h) && ran(h)) {
+        out.innerHTML=base+'\n--- your injected command also ran ---\n$ cat /opt/yorkgpt/flag.txt\n<span class="flag">'+flag()+'</span>\n\nLESSON: the app glued your input into a shell command. A ; | or && lets you run extra commands. Fix: never pass user input to a shell; validate it as a plain hostname/IP.';
+      } else if (injected(h)) {
+        out.textContent=base+'\n(the shell saw your metacharacter — now append an actual command, like  ; cat flag.txt )';
+      } else {
+        out.textContent=base+'\nhost is up. (This tool runs: ping -c1 <your input>. What if your input contained more than a hostname?)';
+      }
+    });
+  })();
+</script>
+
+</div></body></html>
