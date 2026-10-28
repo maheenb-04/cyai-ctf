@@ -337,47 +337,35 @@
 
   // ------------------------------------------------------------------ #/tools  tools & resources
   var TOOLS = [
-    // browser toolboxes — nothing to install
-    ['CyberChef', 'https://gchq.github.io/CyberChef/', 'The "cyber swiss army knife": Base64, hex, ROT13/Caesar, XOR, hashes, RSA, magic auto-detect. Your #1 tool.', 'Toolbox'],
-    ['TryHackMe AttackBox', 'https://tryhackme.com/', 'A full Kali Linux hacking machine in your browser (free account). Every tool pre-installed.', 'Toolbox'],
-    ['Hack The Box Pwnbox', 'https://www.hackthebox.com/', 'Browser-based Parrot/Kali with all the tools, no setup (free account).', 'Toolbox'],
-    ['Google Cloud Shell', 'https://shell.cloud.google.com/', 'A free Linux terminal in your browser with Python, openssl, curl and more.', 'Toolbox'],
-    ['Replit', 'https://replit.com/', 'Write and run Python/JS in the browser — great for scripting a solver (e.g. RSA, XOR).', 'Toolbox'],
-    ['DistroSea', 'https://distrosea.com/', 'Run Kali / Ubuntu live in your browser, no install.', 'Toolbox'],
+    // start here
+    ['CyberChef', 'https://gchq.github.io/CyberChef/', 'The "cyber swiss army knife": Base64, hex, ROT13/Caesar, XOR, hashes, file-type detection, photo metadata (Extract EXIF), and a Magic recipe that auto-detects encodings.', 'Toolbox'],
+    ['HexEd.it', 'https://hexed.it/', 'Open any file and read its raw bytes. Useful when a file is disguised as another type.', 'Toolbox'],
     // crypto
     ['dCode', 'https://www.dcode.fr/', 'Identify and solve almost any cipher: substitution, Vigenère, Morse, and more.', 'Cryptography'],
-    ['CrackStation', 'https://crackstation.net/', 'Reverse common unsalted hashes (MD5/SHA) by lookup.', 'Cryptography'],
-    ['FactorDB', 'http://factordb.com/', 'Look up the factors of a number — handy for weak RSA moduli.', 'Cryptography'],
-    ['quipqiup', 'https://quipqiup.com/', 'Auto-solve substitution ciphers.', 'Cryptography'],
-    ['RsaCtfTool', 'https://github.com/RsaCtfTool/RsaCtfTool', 'Attacks many weak-RSA cases automatically (Fermat, Wiener, small-e…).', 'Cryptography'],
+    ['quipqiup', 'https://quipqiup.com/', 'Auto-solves substitution ciphers.', 'Cryptography'],
+    ['FactorDB', 'http://factordb.com/', 'Look up the factors of a number. Handy for weak RSA moduli.', 'Cryptography'],
     // forensics / network
-    ['Wireshark', 'https://www.wireshark.org/', 'The standard packet analyzer. Download it to open .pcap files and follow TCP/UDP streams.', 'Forensics'],
-    ['A-Packets', 'https://apackets.com/', 'Analyze a .pcap online in your browser — no install needed.', 'Forensics'],
-    ["Jeffrey's EXIF Viewer", 'https://exif.regex.info/exif.cgi', 'Upload a photo to read its hidden EXIF metadata (camera, time, GPS).', 'Forensics'],
-    ['Aperi’Solve', 'https://www.aperisolve.com/', 'Online steganography analysis: runs zsteg, steghide, strings on an image at once.', 'Forensics'],
-    ['StegOnline', 'https://georgeom.net/StegOnline/', 'Browse image bit-planes and extract LSB-hidden data in the browser.', 'Forensics'],
+    ['A-Packets', 'https://apackets.com/', 'Upload a .pcap and browse its packets, DNS queries and HTTP traffic.', 'Forensics'],
+    ['Aperi’Solve', 'https://www.aperisolve.com/', 'Steganography analysis: runs zsteg, steghide and strings on an image at once.', 'Forensics'],
+    ['StegOnline', 'https://georgeom.net/StegOnline/', 'Browse image bit-planes and extract LSB-hidden data.', 'Forensics'],
     // web
     ['Browser DevTools', 'https://developer.chrome.com/docs/devtools/', 'F12: view source, edit cookies (Application tab), inspect requests (Network).', 'Web'],
-    ['jwt.io', 'https://jwt.io/', 'Decode and inspect JSON Web Tokens; spot weak/"none" algorithms.', 'Web'],
-    ['Burp Suite (Community)', 'https://portswigger.net/burp/communitydownload', 'Intercept and tamper with web requests.', 'Web'],
+    ['jwt.io', 'https://jwt.io/', 'Decode and inspect JSON Web Tokens; spot weak or "none" algorithms.', 'Web'],
     // reverse engineering
-    ['Dogbolt', 'https://dogbolt.org/', 'Online decompiler: upload a binary, see C from Ghidra/IDA/angr side by side.', 'Reverse Engineering'],
-    ['Compiler Explorer', 'https://godbolt.org/', 'See the assembly a piece of C/C++ compiles to — great for understanding checks.', 'Reverse Engineering'],
-    ['Ghidra', 'https://ghidra-sre.org/', "The NSA's free reverse-engineering suite (decompiler + disassembler).", 'Reverse Engineering'],
+    ['Dogbolt', 'https://dogbolt.org/', 'Online decompiler: upload a binary, compare output from several decompilers side by side.', 'Reverse Engineering'],
+    ['Compiler Explorer', 'https://godbolt.org/', 'See the assembly a piece of C/C++ compiles to.', 'Reverse Engineering'],
     // osint
-    ['Wayback Machine', 'https://web.archive.org/', 'See old, deleted, or changed versions of any web page.', 'OSINT'],
-    ['Google Lens', 'https://lens.google.com/', 'Reverse-image search to find where a photo came from.', 'OSINT'],
-    ['OSINT Framework', 'https://osintframework.com/', 'A directory of open-source-intelligence tools by category.', 'OSINT'],
+    ['Wayback Machine', 'https://web.archive.org/', 'Old, deleted or changed versions of any web page.', 'OSINT'],
+    ['Google Lens', 'https://lens.google.com/', 'Reverse-image search: find where a photo came from.', 'OSINT'],
     // passwords
-    ['hashes.com', 'https://hashes.com/en/decrypt/hash', 'Identify a hash type and try to crack it online.', 'Passwords'],
-    ['hashcat', 'https://hashcat.net/hashcat/', 'The fastest password/hash cracker (GPU). Use with wordlists like rockyou.', 'Passwords'],
-    ['John the Ripper', 'https://www.openwall.com/john/', 'Classic cracker; zip2john/ssh2john turn files into crackable hashes.', 'Passwords'],
+    ['CrackStation', 'https://crackstation.net/', 'Reverse common unsalted hashes (MD5/SHA) by lookup.', 'Passwords'],
+    ['hashes.com', 'https://hashes.com/en/decrypt/hash', 'Identify a hash type and look it up.', 'Passwords'],
     // ai
-    ['OWASP LLM Top 10', 'https://genai.owasp.org/llm-top-10/', 'The authority on AI/LLM risks: prompt injection, system-prompt leakage, and more.', 'AI'],
+    ['OWASP LLM Top 10', 'https://genai.owasp.org/llm-top-10/', 'The reference list of AI/LLM risks: prompt injection, system-prompt leakage, and more.', 'AI'],
     // finance
-    ['Google Sheets', 'https://sheets.google.com/', 'Free spreadsheet: paste data, sort, and use formulas to spot anomalies.', 'Finance'],
+    ['Google Sheets', 'https://sheets.google.com/', 'Paste data, sort, filter and use formulas to spot anomalies (Excel for the web works too).', 'Finance'],
     // aviation
-    ['Flightradar24', 'https://www.flightradar24.com/', 'See live flights, callsigns and transponder/squawk codes.', 'Aviation'],
+    ['Flightradar24', 'https://www.flightradar24.com/', 'Live flights with callsigns, routes and transponder/squawk codes.', 'Aviation'],
     ['SKYbrary', 'https://skybrary.aero/', 'Plain-English reference for aviation terms, codes and procedures.', 'Aviation'],
   ];
   function viewTools() {
@@ -397,11 +385,11 @@
         (blurb ? '<p class="text-neon/60 text-sm mt-0 mb-3">' + blurb + '</p>' : '') +
         '<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">' + items.map(card).join('') + '</div></section>';
     }
-    var body = section('Toolbox', 'Browser toolboxes — nothing to install', 'Full environments and the one tool you’ll reach for most. Open them in a new tab and keep them handy.');
+    var body = section('Toolbox', 'Start here', 'The tools you’ll reach for most. Keep them open in a tab.');
     cats.filter(function (c) { return c !== 'Toolbox'; }).forEach(function (c) { body += section(c, c + ' tools'); });
 
     app.innerHTML = page(heading('Toolbox', 'Tools &amp; resources') +
-      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-5">Everything you need to crack these challenges, free. Many run entirely in your browser &mdash; no install. New to a tool? The <a href="#/learn" class="text-amber underline">field manual</a> explains which to use where.</p>' +
+      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-5">Every tool here runs in your browser: no install, no sign-up. New to a tool? The <a href="#/learn" class="text-amber underline">field manual</a> explains which to use where.</p>' +
       '<input id="tool-search" class="field max-w-md mb-8" placeholder="Search tools… (e.g. pcap, base64, rsa, stego, jwt)" autocomplete="off">' +
       '<div id="tool-results">' + body + '</div>' +
       '<p id="tool-empty" class="text-neon/50" hidden>No tools match that. Try another word.</p>', 'max-w-5xl');
@@ -422,7 +410,7 @@
     });
   }
 
-  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn, admin: viewAdmin, tools: viewTools };
+  var routes = { '': viewHome, register: viewRegister, login: viewLogin, team: viewTeam, challenges: viewChallenges, scoreboard: viewScoreboard, learn: viewLearn, admin: viewAdmin, tools: viewTools, solutions: viewSolutions };
   function hashParts() { // "#/team/Null%20Pointers?x=1" -> { name: 'team', sub: 'Null Pointers', query: 'x=1' }
     var h = location.hash.replace(/^#\/?/, ''), qi = h.indexOf('?');
     var path = qi < 0 ? h : h.slice(0, qi), segs = path.split('/');
@@ -868,7 +856,7 @@
         '<div class="min-w-0">' + heading('Challenges', 'Hunt the flags').replace('mb-6', 'mb-0') + '</div>' +
         '<p id="ch-timer" class="sm:ml-auto m-0 text-sm uppercase tracking-widest ' + (ended ? 'text-neon' : 'text-alert') + '"></p>' +
       '</div>' +
-      (ended ? '<div class="card mb-6 text-neon">The CTF is over. Thanks for playing! <a href="#/scoreboard" class="text-amber underline">See the final scoreboard</a>.</div>' : '') +
+      (ended ? '<div class="card mb-6 text-neon">The CTF is over. Thanks for playing! <a href="#/scoreboard" class="text-amber underline">See the final scoreboard</a> or <a href="#/solutions" class="text-amber underline">read the solutions</a>.</div>' : '') +
       (!team && !ended ? '<div class="bg-amber/10 border border-amber/40 text-amber p-4 mb-6 text-sm">You can read the challenges, but you need a team to submit flags. <a href="#/team" class="underline font-bold">Create or join a team</a>.</div>' : '') +
       '<div id="ch-filters" class="flex flex-wrap items-center gap-2 mb-8"></div>' +
       '<div id="ch-groups" class="space-y-10"></div>');
@@ -956,6 +944,61 @@
     onLeave(function () { document.removeEventListener('visibilitychange', onVisible); });
   }
 
+  // Hint 1 is open from the start; each later hint opens HINT_STEP_MS after the one before it.
+  var HINT_STEP_MS = 15 * 60000;
+  function hintOpensAt(i) { return new Date(clock.start.getTime() + i * HINT_STEP_MS); }
+
+  // ------------------------------------------------------------------ #/solutions  (after the CTF closes)
+  var solutionsCache = null;
+  async function loadSolutions() {
+    if (solutionsCache) return solutionsCache;
+    try {
+      var r = await api.rpc('get_solutions');
+      if (r && r.ok) solutionsCache = r.solutions || [];
+      return solutionsCache;
+    } catch (e) { return null; } // migration 004 not run yet
+  }
+  function solutionHtml(x) {
+    // writeup is organizer HTML from the challenge_solutions table (trusted)
+    return '<p class="label">Solution</p>' +
+      '<p class="m-0 mb-3 text-sm text-neon/70">Flag: <code data-sol-flag class="text-amber wrap-any">' + esc(x.flag) + '</code></p>' +
+      '<div class="ctf-html text-sm text-neon/80 leading-relaxed wrap-any">' + (x.writeup || '<p class="text-neon/50">Walkthrough coming soon.</p>') + '</div>';
+  }
+  async function viewSolutions(stale) {
+    app.innerHTML = page('<p class="text-neon/50">Loading solutions…</p>');
+    var r;
+    try { r = await api.rpc('get_solutions'); }
+    catch (e) {
+      if (stale()) return;
+      app.innerHTML = page(heading('Debrief', 'Solutions') + '<div class="card"><p class="m-0 text-neon/70">' +
+        (isMissingFn(e) ? 'Solutions aren’t published yet.' : esc(friendly(e))) + '</p></div>', 'max-w-3xl');
+      return;
+    }
+    if (stale()) return;
+    if (!r.ok) {
+      app.innerHTML = page(heading('Debrief', 'Solutions') + '<div class="card"><p class="m-0 text-neon/80">Solutions for every challenge are published here when the CTF closes' +
+        (r.end ? ', <b class="text-neon">' + esc(fmtTime(r.end)) + '</b>' : '') + '. Until then, keep hunting.</p></div>', 'max-w-3xl');
+      return;
+    }
+    solutionsCache = r.solutions || [];
+    var cats = [], byCat = {};
+    solutionsCache.forEach(function (x) { if (!byCat[x.category]) { byCat[x.category] = []; cats.push(x.category); } byCat[x.category].push(x); });
+    app.innerHTML = page(heading('Debrief', 'Solutions') +
+      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-8">The CTF is closed. Here is how every challenge is solved. ' +
+        'Try the ones you missed again before you open the answer.</p>' +
+      cats.map(function (cat) {
+        return '<section class="mb-10"><h2 class="font-term text-3xl text-neon mb-3 wrap-any">' + esc(cat).toUpperCase() + '</h2><div class="space-y-3">' +
+          byCat[cat].map(function (x) {
+            return '<details data-solution="' + esc(x.id) + '" class="group bg-void border border-line p-4">' +
+              '<summary class="cursor-pointer list-none flex items-baseline gap-3"><b class="text-neon wrap-any min-w-0">' + esc(x.name) + '</b>' +
+              '<span class="ml-auto shrink-0 text-xs uppercase tracking-widest text-neon/50">' + Number(x.value) + ' pts' +
+              (x.difficulty ? ' &middot; <span class="' + diffClass(x.difficulty) + '">' + esc(x.difficulty) + '</span>' : '') + '</span></summary>' +
+              '<div class="mt-4">' + solutionHtml(x) + '</div></details>';
+          }).join('') + '</div></section>';
+      }).join('') +
+      '<div class="flex flex-col sm:flex-row gap-3"><a href="#/scoreboard" class="btn-green">Final scoreboard</a><a href="#/learn" class="btn-red">Field manual</a></div>', 'max-w-4xl');
+  }
+
   // ------------------------------------------------------------------ challenge modal
   var modalReturnFocus = null;
   function closeModal() {
@@ -997,7 +1040,9 @@
           (/^https?:/i.test(url) ? '' : ' download') + '>&#8681; ' + esc(name) + '</a></li>';
       }).join('') + '</ul></div>' : '') +
       (hints.length ? '<div class="mt-5 space-y-2"><p class="label">Hints</p>' + hints.map(function (h, i) {
-        return '<div><button type="button" data-hint="' + i + '" class="cyai-btn w-full text-left px-4 py-2.5 border border-amber/40 text-amber text-sm">&#9656; Reveal hint ' + (i + 1) + '</button>' +
+        var opens = hintOpensAt(i), locked = !ctx.ended && clock.now() < opens;
+        return '<div><button type="button" data-hint="' + i + '" data-opens="' + opens.getTime() + '" class="cyai-btn w-full text-left px-4 py-2.5 border border-amber/40 text-amber text-sm"' + (locked ? ' disabled' : '') + '>' +
+            (locked ? 'Hint ' + (i + 1) + ' unlocks at ' + esc(fmtTime(opens)) : '&#9656; Reveal hint ' + (i + 1)) + '</button>' +
           '<div data-hint-body="' + i + '" class="ctf-html text-sm text-neon/80 bg-void border border-amber/30 p-3 wrap-any" hidden>' + h + '</div></div>';
       }).join('') + '</div>' : '') +
       (guideFor(c.category) ? '<p class="mt-4 mb-0 text-sm text-neon/60">New to ' + esc(guideFor(c.category).title) + ' challenges? ' +
@@ -1013,9 +1058,17 @@
       '</form>' +
       '<div id="m-solves" class="mt-6 pt-4 border-t border-line">' +
         '<p class="label">Solves <span data-solve-count>(' + Number(c.solves) + ')</span></p>' +
-        '<div data-solve-list class="text-sm text-neon/50">' + (c.solves ? 'Loading…' : 'No one yet. Be the first blood.') + '</div></div>';
+        '<div data-solve-list class="text-sm text-neon/50">' + (c.solves ? 'Loading…' : 'No one yet. Be the first blood.') + '</div></div>' +
+      '<div id="m-solution" class="mt-6 pt-4 border-t border-line" hidden></div>';
 
     var modalSeq = ++openModal.seq;
+    if (ctx.ended) loadSolutions().then(function (sols) {
+      var x = sols && sols.find(function (y) { return y.id === c.id; });
+      if (!x || modalSeq !== openModal.seq) return;
+      var box = $('#m-solution');
+      box.innerHTML = solutionHtml(x);
+      box.hidden = false;
+    });
     async function loadSolves() {
       var box = $('#m-solves');
       var r;
@@ -1038,6 +1091,13 @@
     loadSolves();
 
     $$('[data-hint]', $('#modal-body')).forEach(function (b) {
+      if (b.disabled) { // unlock while the modal is open
+        later(Math.max(0, Number(b.getAttribute('data-opens')) - clock.now().getTime()) + 500, function () {
+          if (modalSeq !== openModal.seq) return;
+          b.disabled = false;
+          b.innerHTML = '&#9656; Reveal hint ' + (Number(b.getAttribute('data-hint')) + 1);
+        });
+      }
       b.addEventListener('click', function () {
         b.hidden = true;
         $('[data-hint-body="' + b.getAttribute('data-hint') + '"]', $('#modal-body')).hidden = false;
@@ -1095,11 +1155,11 @@
       tools: [
         ['View Page Source', 'Ctrl+U on Windows, Cmd+Option+U on a Mac. Shows the raw HTML exactly as the server sent it.'],
         ['Developer Tools', 'F12, or right-click a page and choose Inspect. The Elements tab shows the live page, Console runs JavaScript, Network lists every file the page loads.'],
-        ['Find on page', 'Ctrl+F or Cmd+F inside the source or DevTools to search for words like "flag", "admin" or "password".'],
-        ['A laptop', 'Phones hide most of these tools. If you only have a phone, team up with someone who has a laptop for this category.'],
+        ['Find on page', 'Ctrl+F or Cmd+F inside the source or DevTools to search a long page for keywords.'],
+        ['Laptop recommended', 'Mobile browsers don’t expose developer tools.'],
       ],
-      tip: 'Read everything the page gives you, not just what it displays. Developers leave behind notes, old links, test data ' +
-        'and unused code, and a login form that looks like the only way in usually isn’t.',
+      tip: 'What the page renders is only part of what the server sent. Source, scripts, cookies and network requests are all ' +
+        'readable, and developers leave things in them.',
     },
     {
       id: 'osint', title: 'OSINT', match: /osint/i,
@@ -1112,8 +1172,8 @@
         ['Reverse image search', 'Google Lens or images.google.com tell you where a photo has appeared before.'],
         ['Official sources', 'An organization’s own website, Wikipedia (check its sources at the bottom) and government or school records.'],
       ],
-      tip: 'Read the question carefully: it tells you exactly what to find and what format the answer needs. Confirm every fact ' +
-        'with a second source before you submit, and only ever use public information. Never contact or bother real people.',
+      tip: 'Answer exactly what the question asks, in the format it asks for, and confirm each fact with a second source. ' +
+        'Public information only: never contact real people.',
     },
     {
       id: 'crypto', title: 'Cryptography', match: /crypt|cipher/i,
@@ -1131,9 +1191,8 @@
       what: 'Digital forensics is detective work on digital evidence: files, photos and logs. Logs are records computers keep of everything that happens, such as who logged in, when, and from where. Forensics challenges hand you evidence and ask what really happened. Investigators use these same skills on real cybercrime cases. In this CTF, YorkGPT tried to cover its tracks, but files always leave evidence behind. Examine what it left and find the clues it missed.',
       tools: [
         ['Find on page', 'Ctrl+F on Windows, Cmd+F on Mac, or “Find in page” in your phone browser’s menu: logs can be hundreds of lines long, so search for keywords instead of reading every line.'],
-        ['Jeffrey’s Image Metadata Viewer', '<a href="https://exif.regex.info/exif.cgi" target="_blank" rel="noopener" class="text-amber underline wrap-any">exif.regex.info</a>: upload a photo and see its hidden metadata, such as camera, date, comments and sometimes location.'],
         ['HexEd.it', '<a href="https://hexed.it/" target="_blank" rel="noopener" class="text-amber underline wrap-any">hexed.it</a>: opens any file in your browser and shows its raw bytes. Useful when a file won’t open or might be disguised as another type.'],
-        ['CyberChef', '<a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener" class="text-amber underline wrap-any">gchq.github.io/CyberChef</a>: the “Strings” and “Detect File Type” recipes pull readable text out of files and identify what a file really is.'],
+        ['CyberChef', '<a href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener" class="text-amber underline wrap-any">gchq.github.io/CyberChef</a>: the “Strings” and “Detect File Type” recipes pull readable text out of files and identify what a file really is, and “Extract EXIF” shows a photo’s hidden metadata, such as camera, date, comments and sometimes location.'],
         ['Learn more', '<a href="https://primer.picoctf.org/#_forensics" target="_blank" rel="noopener" class="text-amber underline wrap-any">picoCTF Primer: Forensics</a>.'],
       ],
       tip: 'Investigators look for what’s unusual. In a log, compare timestamps, usernames and outcomes, and notice what stands out from the normal pattern. In a file, don’t trust its name: check what it really is and what’s hidden in its metadata.',
@@ -1144,13 +1203,12 @@
         'Prompt injection is writing a message that makes the AI follow your instructions instead of the developer’s. ' +
         'It is ranked the number one security risk for applications built on large language models (OWASP Top 10 for LLM Apps).',
       tools: [
-        ['The chat box', 'That’s all you need. No code or downloads.'],
-        ['Notes', 'Keep track of what you tried and exactly how the AI replied. Small changes in wording can change everything.'],
-        ['Known approaches', 'Researchers study role-play, asking a model about its own instructions, and asking for answers in a different format. Think about why each might work.'],
+        ['The challenge chat window', 'Nothing else required.'],
+        ['A log of attempts', 'Small changes in wording produce very different replies. Record your exact prompts and the responses.'],
+        ['OWASP LLM01', 'The OWASP Top 10 for LLM Apps describes prompt injection and why it is hard to defend against.'],
       ],
-      tip: 'If asking directly fails, don’t repeat the same request louder: change the framing. And remember the defender’s ' +
-        'lesson: never put secrets in a prompt, limit what an AI is allowed to do, and keep a human in the loop. Only practice ' +
-        'on systems you have permission to test, like this CTF.',
+      tip: 'When a request fails, change the framing, not the volume. The defender’s takeaway: never put secrets in a prompt, ' +
+        'and limit what a model is allowed to do. Only test systems you have permission to test.',
     },
     {
       id: 'social', title: 'Social Engineering', match: /social|phish/i,
@@ -1158,14 +1216,13 @@
         'password into a fake page or handing over information. Phishing emails are the most common kind, and most real ' +
         'break-ins start with one. These challenges teach you to spot the tricks before they work on you.',
       tools: [
-        ['Hover before you click', 'On a laptop, rest the mouse on a link and read the real address in the bottom corner of the browser. On a phone, press and hold the link to preview it.'],
+        ['Link preview', 'Hover over a link (or press and hold on a phone) to see the real destination before opening it.'],
         ['Read the sender’s address', 'The display name can say anything. The part after the @ is what counts, and look-alike domains are a classic trick.'],
         ['Read a domain right to left', 'In login.example.com.evil.net the site you actually reach is evil.net. Everything to its left is decoration.'],
         ['Show original', 'Most email apps can show the raw message (Gmail: three dots, then Show original), including where it really came from.'],
       ],
-      tip: 'Look for pressure: urgency, threats, “act in 2 hours”, prizes you didn’t enter for. Attackers want you to hurry so ' +
-        'you don’t check. When in doubt, don’t use the link at all: go to the real website yourself, or ask IT through a ' +
-        'channel you already know is genuine.',
+      tip: 'Phishing runs on urgency and borrowed authority. Verify the sending domain and the real link target before trusting ' +
+        'anything the message says.',
     },
     {
       id: 'safety', title: 'AI Safety', match: /safety|hallucin|misinfo/i,
@@ -1177,23 +1234,21 @@
         ['Lateral reading', 'Open new tabs and see what other independent sources say about a claim, instead of rereading the claim itself.'],
         ['Search for each claim', 'Break the answer into separate statements and check them one at a time. A mostly true answer can hide one false detail.'],
       ],
-      tip: 'Treat a confident AI answer like a rumor from a stranger: possibly true, not yet proven. Be extra careful with ' +
-        'specific details such as dates, names and numbers, because those are where made-up facts hide most easily.',
+      tip: 'Treat a confident AI answer as an unverified claim. Specific names, dates, numbers and citations are where ' +
+        'fabrications usually hide.',
     },
     {
       id: 'finance', title: 'Finance & Accounting', match: /financ|account|audit/i,
       what: 'When a college buys something, the purchase leaves a paper trail: a purchase order (PO) approves the purchase ' +
         'before it happens, the vendor sends an invoice, and accounts payable sends the payment. Auditors check that every payment ' +
         'traces back to an approved PO for the same vendor and the same amount, because money that doesn’t match is how both honest ' +
-        'mistakes and fraud get caught. In this CTF, YorkGPT got into York’s (fictional) books, and your job is to audit them.',
+        'mistakes and fraud get caught. In this CTF, YorkGPT got into York’s books, and your job is to audit them.',
       tools: [
-        ['A spreadsheet', 'Google Sheets or Excel online, free in the browser. Paste the tables in, sort by a column, and let formulas do the comparing.'],
-        ['A calculator', 'Your phone’s calculator, or type math straight into a Google search. Check differences between amounts, not just the amounts.'],
-        ['Find on page', 'Ctrl+F or Cmd+F to jump between every row that mentions the same vendor, PO number or amount.'],
+        ['A spreadsheet', 'Google Sheets or Excel for the web. Paste the tables in, sort and filter, and let formulas do the comparing.'],
+        ['Find on page', 'Ctrl+F or Cmd+F to jump between rows that share a vendor, PO number or amount.'],
       ],
-      tip: 'Work through the records one row at a time and match each payment to its approval, ticking off the ones that line up. ' +
-        'Whatever is left over is what you’re looking for. Look closely at names and numbers that are almost right: a vendor ' +
-        'you’ve never heard of, or an amount that’s close to what was approved but not equal to it.',
+      tip: 'Reconcile record by record. Whatever doesn’t trace back to an approval is your lead, and near-matches deserve ' +
+        'the closest look.',
     },
     {
       id: 'reverse', title: 'Reverse Engineering', match: /revers/i,
@@ -1203,12 +1258,11 @@
       tools: [
         ['View Page Source', 'Ctrl+U on Windows, Cmd+Option+U on a Mac. Code that runs in your browser is sent to your browser, so you can read it.'],
         ['Browser console', 'F12, then the Console tab. Type JavaScript and press Enter to run it, which is a great way to test what one line of code does.'],
-        ['CyberChef', 'gchq.github.io/CyberChef: converts between numbers, text, hex and other formats without writing any code.'],
-        ['A laptop', 'Phones can’t open the developer tools. If you only have a phone, team up with someone who has a laptop for this category.'],
+        ['CyberChef', 'gchq.github.io/CyberChef: converts between numbers, text, hex, Base64 and XOR without writing code.'],
+        ['Laptop recommended', 'Mobile browsers don’t expose developer tools.'],
       ],
-      tip: 'Don’t try to understand everything at once. Find the one place where the program decides “right” or “wrong”, then ' +
-        'work backwards from there one step at a time, writing down what each step does. Strange variable names are just names: ' +
-        'rename them in your notes to whatever makes sense to you.',
+      tip: 'Find the comparison that decides pass or fail and work backwards from it. Rename obfuscated variables in your ' +
+        'notes as you work out what they hold.',
     },
     {
       id: 'aviation', title: 'Aviation', match: /aviat|flight|airport/i,
@@ -1216,15 +1270,14 @@
         'UAL237). A transponder in the plane broadcasts a 4-digit number called a squawk code, which controllers assign, and a ' +
         'handful of codes are reserved so pilots can report an emergency silently. Airports have two codes: a 3-letter IATA code ' +
         'you see on luggage tags and a 4-letter ICAO code that pilots and controllers use. In this CTF, YorkGPT took over a ' +
-        '(fictional) York training flight.',
+        'York training flight.',
       tools: [
         ['FAA and SKYbrary', 'faa.gov and skybrary.aero explain aviation terms in plain English. Search them for any code or word you don’t recognize.'],
         ['Airport code lookup', 'Search an airport’s name or code online: its Wikipedia page lists both its IATA and ICAO codes near the top.'],
         ['Flightradar24', 'flightradar24.com shows real flights live, with their callsigns, routes and altitudes, so you can see what this data looks like.'],
       ],
-      tip: 'Before you start, write down what each column in the data means. Once you know what the codes stand for, the one that ' +
-        'doesn’t belong stands out. Never guess an aviation code: look it up in an official source, because similar-looking ' +
-        'codes can mean completely different things.',
+      tip: 'Work out what every field means before hunting for the anomaly, and verify codes against an official source: ' +
+        'similar-looking codes can mean very different things.',
     },
     {
       id: 'passwords', title: 'Passwords', match: /password/i,
@@ -1266,11 +1319,10 @@
   function viewLearn() {
     var sub = hashParts().sub;
     app.innerHTML = page(heading('Field manual', 'Learn the basics') +
-      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-6">Never done a CTF before? Start here. Each section explains one ' +
-        'kind of challenge, the free tools you’ll use and a tip to get unstuck. Nothing here gives away a flag, so read it ' +
-        'as much as you like, even during the event.</p>' +
+      '<p class="text-neon/70 max-w-3xl leading-relaxed mb-6">New to CTFs? Each section covers one category: what it is, ' +
+        'the tools and how to approach it. Nothing here gives away a flag.</p>' +
       '<a href="#/tools" class="tool-card block bg-panel border border-neon/50 p-4 mb-8 no-underline"><b class="text-neon">Open the Toolbox</b>' +
-        '<span class="block text-neon/70 text-sm mt-1">Free tools &mdash; CyberChef, Wireshark, online decompilers, even a full Kali Linux in your browser. Everything you need to solve these challenges.</span></a>' +
+        '<span class="block text-neon/70 text-sm mt-1">Browser tools for every category: CyberChef, packet and image analyzers, online decompilers. Nothing to install.</span></a>' +
       '<div class="flex flex-wrap gap-2 mb-10">' + GUIDES.map(function (g) {
         return '<button type="button" data-jump="' + g.id + '" class="cyai-btn px-3 py-2 border border-neon/40 text-neon text-sm uppercase tracking-wider">' + g.title + '</button>';
       }).join('') + '</div>' +
@@ -1279,7 +1331,7 @@
         '<ul class="list-none p-0 m-0 space-y-2 text-neon/75 leading-relaxed">' +
           '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Every challenge hides a flag that looks like <code class="text-amber">CYAI{...}</code>. Find it, paste it into the challenge, and your team scores the points.</span></li>' +
           '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Capital letters and extra spaces don’t matter, but everything else must match exactly, including the brackets.</span></li>' +
-          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Each challenge has hints. They’re free, so open them whenever you’re stuck.</span></li>' +
+          '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Hints don’t cost points, but try the challenge first. Hint 2 unlocks 15 minutes after the CTF starts.</span></li>' +
           '<li class="flex gap-3"><span class="text-alert">&gt;</span><span>Guessing doesn’t work: you get 10 tries a minute. Split up the challenges with your team and talk through what you find.</span></li>' +
         '</ul></section>' +
 
